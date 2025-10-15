@@ -7,6 +7,10 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import AdminLogin from "./pages/admin/Login";
 import AdminDashboard from "./pages/admin/Dashboard";
+import Categories from "./pages/admin/Categories";
+import Tours from "./pages/admin/Tours";
+import Inquiries from "./pages/admin/Inquiries";
+import Settings from "./pages/admin/Settings";
 
 const queryClient = new QueryClient();
 
@@ -20,6 +24,10 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="/admin/categories" element={<Categories />} />
+          <Route path="/admin/tours" element={<Tours />} />
+          <Route path="/admin/inquiries" element={<Inquiries />} />
+          <Route path="/admin/settings" element={<Settings />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
