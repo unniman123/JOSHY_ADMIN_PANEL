@@ -12,10 +12,10 @@ export async function getUserRole(userId: string): Promise<AppRole | null> {
     .from('user_roles')
     .select('role')
     .eq('user_id', userId)
-    .single();
+    .maybeSingle();
   
-  if (error) return null;
-  return data?.role || null;
+  if (error || !data) return null;
+  return data.role as AppRole;
 }
 
 export async function isAdmin(userId: string): Promise<boolean> {
