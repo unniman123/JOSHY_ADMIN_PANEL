@@ -91,7 +91,7 @@ export default function Tours() {
             <h1 className="text-3xl font-bold">Tours</h1>
             <p className="text-muted-foreground">Manage your tour listings</p>
           </div>
-          <Button onClick={() => navigate('/admin/tours/create')}>
+          <Button onClick={() => navigate('/admin/tours/new')}>
             <Plus className="mr-2 h-4 w-4" />
             Add Tour
           </Button>

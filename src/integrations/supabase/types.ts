@@ -183,12 +183,19 @@ export type Database = {
           created_by: string | null
           description: string | null
           difficulty_level: string | null
+          display_order: number | null
           duration_days: number | null
           featured_image_url: string | null
           id: string
+          image_gallery_urls: Json | null
+          is_day_out_package: boolean | null
+          is_featured: boolean | null
+          is_published: boolean | null
+          itinerary: Json | null
           max_group_size: number | null
           meta_description: string | null
           meta_title: string | null
+          overview: Json | null
           price: number | null
           short_description: string | null
           slug: string
@@ -202,12 +209,19 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           difficulty_level?: string | null
+          display_order?: number | null
           duration_days?: number | null
           featured_image_url?: string | null
           id?: string
+          image_gallery_urls?: Json | null
+          is_day_out_package?: boolean | null
+          is_featured?: boolean | null
+          is_published?: boolean | null
+          itinerary?: Json | null
           max_group_size?: number | null
           meta_description?: string | null
           meta_title?: string | null
+          overview?: Json | null
           price?: number | null
           short_description?: string | null
           slug: string
@@ -221,12 +235,19 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           difficulty_level?: string | null
+          display_order?: number | null
           duration_days?: number | null
           featured_image_url?: string | null
           id?: string
+          image_gallery_urls?: Json | null
+          is_day_out_package?: boolean | null
+          is_featured?: boolean | null
+          is_published?: boolean | null
+          itinerary?: Json | null
           max_group_size?: number | null
           meta_description?: string | null
           meta_title?: string | null
+          overview?: Json | null
           price?: number | null
           short_description?: string | null
           slug?: string
