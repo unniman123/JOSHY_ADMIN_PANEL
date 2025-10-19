@@ -23,6 +23,9 @@ export type Database = {
           image_url: string | null
           is_active: boolean | null
           name: string
+          parent_category:
+            | Database["public"]["Enums"]["parent_category_type"]
+            | null
           parent_id: string | null
           slug: string
           updated_at: string
@@ -35,6 +38,9 @@ export type Database = {
           image_url?: string | null
           is_active?: boolean | null
           name: string
+          parent_category?:
+            | Database["public"]["Enums"]["parent_category_type"]
+            | null
           parent_id?: string | null
           slug: string
           updated_at?: string
@@ -47,6 +53,9 @@ export type Database = {
           image_url?: string | null
           is_active?: boolean | null
           name?: string
+          parent_category?:
+            | Database["public"]["Enums"]["parent_category_type"]
+            | null
           parent_id?: string | null
           slug?: string
           updated_at?: string
@@ -57,6 +66,83 @@ export type Database = {
             columns: ["parent_id"]
             isOneToOne: false
             referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contact_inquiry: {
+        Row: {
+          email: string
+          id: string
+          message: string
+          name: string
+          status: Database["public"]["Enums"]["contact_inquiry_status"]
+          subject: string
+          submitted_at: string
+        }
+        Insert: {
+          email: string
+          id?: string
+          message: string
+          name: string
+          status?: Database["public"]["Enums"]["contact_inquiry_status"]
+          subject: string
+          submitted_at?: string
+        }
+        Update: {
+          email?: string
+          id?: string
+          message?: string
+          name?: string
+          status?: Database["public"]["Enums"]["contact_inquiry_status"]
+          subject?: string
+          submitted_at?: string
+        }
+        Relationships: []
+      }
+      day_out_inquiry: {
+        Row: {
+          destination: string | null
+          id: string
+          mobile_no: string
+          name: string
+          number_of_people: number
+          package_id: string
+          preferred_date: string
+          special_comments: string | null
+          status: Database["public"]["Enums"]["day_out_inquiry_status"]
+          submitted_at: string
+        }
+        Insert: {
+          destination?: string | null
+          id?: string
+          mobile_no: string
+          name: string
+          number_of_people: number
+          package_id: string
+          preferred_date: string
+          special_comments?: string | null
+          status?: Database["public"]["Enums"]["day_out_inquiry_status"]
+          submitted_at?: string
+        }
+        Update: {
+          destination?: string | null
+          id?: string
+          mobile_no?: string
+          name?: string
+          number_of_people?: number
+          package_id?: string
+          preferred_date?: string
+          special_comments?: string | null
+          status?: Database["public"]["Enums"]["day_out_inquiry_status"]
+          submitted_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "day_out_inquiry_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "tours"
             referencedColumns: ["id"]
           },
         ]
@@ -140,6 +226,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      site_content: {
+        Row: {
+          content_value: Json
+          element_key: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          content_value: Json
+          element_key: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          content_value?: Json
+          element_key?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       tour_images: {
         Row: {
@@ -301,7 +408,13 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
+      contact_inquiry_status: "new" | "responded" | "archived"
+      day_out_inquiry_status: "new" | "contacted" | "closed"
       inquiry_status: "new" | "in_progress" | "resolved" | "closed"
+      parent_category_type:
+        | "Kerala Travel"
+        | "Discover India"
+        | "Global Holiday"
       tour_status: "draft" | "published" | "archived"
     }
     CompositeTypes: {
@@ -431,7 +544,14 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "moderator", "user"],
+      contact_inquiry_status: ["new", "responded", "archived"],
+      day_out_inquiry_status: ["new", "contacted", "closed"],
       inquiry_status: ["new", "in_progress", "resolved", "closed"],
+      parent_category_type: [
+        "Kerala Travel",
+        "Discover India",
+        "Global Holiday",
+      ],
       tour_status: ["draft", "published", "archived"],
     },
   },
