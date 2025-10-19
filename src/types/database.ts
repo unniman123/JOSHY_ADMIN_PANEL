@@ -55,13 +55,20 @@ export interface Inquiry {
   id: string;
   name: string;
   email: string;
-  phone?: string;
+  contact_number?: string;
   tour_id?: string;
   message: string;
   status: InquiryStatus;
   admin_notes?: string;
+  nationality?: string;
+  date_of_travel?: string;
+  number_of_people?: string;
+  number_of_kids?: string;
+  number_of_rooms?: number;
+  hotel_category?: '3-star' | '4-star' | '5-star';
   created_at: string;
   updated_at: string;
+  submitted_at: string;
 }
 
 export interface HomepageSettings {

@@ -183,37 +183,58 @@ export type Database = {
       inquiries: {
         Row: {
           admin_notes: string | null
+          contact_number: string | null
           created_at: string
+          date_of_travel: string | null
           email: string
+          hotel_category: string | null
           id: string
           message: string
           name: string
-          phone: string | null
+          nationality: string | null
+          number_of_kids: string | null
+          number_of_people: string | null
+          number_of_rooms: number | null
           status: Database["public"]["Enums"]["inquiry_status"] | null
+          submitted_at: string | null
           tour_id: string | null
           updated_at: string
         }
         Insert: {
           admin_notes?: string | null
+          contact_number?: string | null
           created_at?: string
+          date_of_travel?: string | null
           email: string
+          hotel_category?: string | null
           id?: string
           message: string
           name: string
-          phone?: string | null
+          nationality?: string | null
+          number_of_kids?: string | null
+          number_of_people?: string | null
+          number_of_rooms?: number | null
           status?: Database["public"]["Enums"]["inquiry_status"] | null
+          submitted_at?: string | null
           tour_id?: string | null
           updated_at?: string
         }
         Update: {
           admin_notes?: string | null
+          contact_number?: string | null
           created_at?: string
+          date_of_travel?: string | null
           email?: string
+          hotel_category?: string | null
           id?: string
           message?: string
           name?: string
-          phone?: string | null
+          nationality?: string | null
+          number_of_kids?: string | null
+          number_of_people?: string | null
+          number_of_rooms?: number | null
           status?: Database["public"]["Enums"]["inquiry_status"] | null
+          submitted_at?: string | null
           tour_id?: string | null
           updated_at?: string
         }

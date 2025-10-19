@@ -53,7 +53,7 @@ export default function Inquiries() {
         variant: 'destructive',
       });
     } else {
-      setInquiries(data || []);
+      setInquiries((data || []) as Inquiry[]);
     }
     setLoading(false);
   };
@@ -130,7 +130,7 @@ export default function Inquiries() {
                     <TableRow key={inquiry.id}>
                       <TableCell className="font-medium">{inquiry.name}</TableCell>
                       <TableCell>{inquiry.email}</TableCell>
-                      <TableCell>{inquiry.phone || 'N/A'}</TableCell>
+                      <TableCell>{inquiry.contact_number || 'N/A'}</TableCell>
                       <TableCell className="max-w-xs truncate">
                         {inquiry.message}
                       </TableCell>
