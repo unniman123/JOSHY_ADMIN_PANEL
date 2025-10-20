@@ -10,7 +10,10 @@ import AdminDashboard from "./pages/admin/Dashboard";
 import Categories from "./pages/admin/Categories";
 import Tours from "./pages/admin/Tours";
 import TourForm from "./pages/admin/TourForm";
-import Inquiries from "./pages/admin/Inquiries";
+import TourInquiries from "./pages/admin/TourInquiries";
+import DayOutInquiries from "./pages/admin/DayOutInquiries";
+import ContactInquiries from "./pages/admin/ContactInquiries";
+import DayOutPackages from "./pages/admin/DayOutPackages";
 import Settings from "./pages/admin/Settings";
 
 const queryClient = new QueryClient();
@@ -30,7 +33,10 @@ const App = () => (
           <Route path="/admin/tours" element={<Tours />} />
           <Route path="/admin/tours/new" element={<TourForm />} />
           <Route path="/admin/tours/edit/:id" element={<TourForm />} />
-          <Route path="/admin/inquiries" element={<Inquiries />} />
+          <Route path="/admin/day-out-packages" element={<DayOutPackages />} />
+          <Route path="/admin/inquiries/tours" element={<TourInquiries />} />
+          <Route path="/admin/inquiries/day-out" element={<DayOutInquiries />} />
+          <Route path="/admin/inquiries/contact" element={<ContactInquiries />} />
           <Route path="/admin/settings" element={<Settings />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
