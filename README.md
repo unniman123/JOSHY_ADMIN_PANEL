@@ -36,6 +36,13 @@ npm i
 npm run dev
 ```
 
+### Required environment variables for local development
+
+- `VITE_SUPABASE_URL` - Supabase project URL (e.g. `https://xyz.supabase.co`)
+- `VITE_SUPABASE_ANON_KEY` - Supabase anon/public API key
+
+These replace any hard-coded Supabase keys in the codebase; ensure they are set before running the dev server.
+
 **Edit a file directly in GitHub**
 
 - Navigate to the desired file(s).

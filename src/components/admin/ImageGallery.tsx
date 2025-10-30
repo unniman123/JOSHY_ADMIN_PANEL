@@ -14,9 +14,11 @@ interface GalleryImage {
 interface ImageGalleryProps {
   images: GalleryImage[];
   onChange: (images: GalleryImage[]) => void;
+  // Optional callback to obtain or create a tour id for server-first uploads
+  onRequireTourId?: () => Promise<string | null>;
 }
 
-export default function ImageGallery({ images, onChange }: ImageGalleryProps) {
+export default function ImageGallery({ images, onChange, onRequireTourId }: ImageGalleryProps) {
   const [uploading, setUploading] = useState(false);
   const { toast } = useToast();
 
@@ -33,10 +35,12 @@ export default function ImageGallery({ images, onChange }: ImageGalleryProps) {
       return;
     }
 
-    if (!file.type.startsWith('image/')) {
+    // Validate file type (only JPEG, PNG, WebP allowed)
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.type.toLowerCase())) {
       toast({
         title: 'Error',
-        description: 'Only image files are allowed',
+        description: 'Only JPEG, PNG, and WebP images are allowed',
         variant: 'destructive',
       });
       return;
@@ -47,7 +51,14 @@ export default function ImageGallery({ images, onChange }: ImageGalleryProps) {
     try {
       const fileExt = file.name.split('.').pop();
       const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
-      const filePath = `${fileName}`;
+      // If the caller provided a tour id generator, use it to place the file under that tour folder
+      let filePath = `${fileName}`;
+      try {
+        const maybeTourId = onRequireTourId ? await onRequireTourId() : null;
+        if (maybeTourId) filePath = `${maybeTourId}/${fileName}`;
+      } catch (err) {
+        // If obtaining tour id fails, fall back to root path
+      }
 
       const { error: uploadError } = await supabase.storage
         .from('tour-images')
@@ -160,7 +171,7 @@ export default function ImageGallery({ images, onChange }: ImageGalleryProps) {
       <div>
         <Input
           type="file"
-          accept="image/*"
+          accept="image/jpeg,image/jpg,image/png,image/webp"
           onChange={handleFileUpload}
           disabled={uploading}
           className="hidden"

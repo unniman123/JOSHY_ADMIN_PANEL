@@ -59,18 +59,24 @@ export default function ContactInquiries() {
 
   const loadInquiries = async () => {
     setLoading(true);
+    console.log('ContactInquiries: Starting to load inquiries');
+
     const { data, error } = await supabase
       .from('contact_inquiry')
       .select('*')
       .order('submitted_at', { ascending: false });
 
+    console.log('ContactInquiries: Query result', { data, error });
+
     if (error) {
+      console.error('ContactInquiries: Error loading inquiries', error);
       toast({
         title: 'Error',
         description: 'Failed to load contact inquiries',
         variant: 'destructive',
       });
     } else {
+      console.log('ContactInquiries: Setting inquiries data', data);
       setInquiries((data || []) as ContactInquiry[]);
     }
     setLoading(false);
@@ -136,41 +142,53 @@ export default function ContactInquiries() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {inquiries.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center text-muted-foreground">
-                      No contact inquiries found.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  inquiries.map((inquiry) => (
-                    <TableRow key={inquiry.id}>
-                      <TableCell className="font-medium">{inquiry.name}</TableCell>
-                      <TableCell>{inquiry.email}</TableCell>
-                      <TableCell className="max-w-xs truncate">{inquiry.subject}</TableCell>
-                      <TableCell>
-                        <Badge variant={getStatusVariant(inquiry.status)}>
-                          {inquiry.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {new Date(inquiry.submitted_at).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedInquiry(inquiry);
-                            setDialogOpen(true);
-                          }}
-                        >
-                          View Details
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
+                {(() => {
+                  console.log('ContactInquiries: Rendering table body, inquiries.length:', inquiries.length);
+                  console.log('ContactInquiries: inquiries array:', inquiries);
+
+                  if (inquiries.length === 0) {
+                    console.log('ContactInquiries: No inquiries found, showing empty message');
+                    return (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center text-muted-foreground">
+                          No contact inquiries found.
+                        </TableCell>
+                      </TableRow>
+                    );
+                  } else {
+                    console.log('ContactInquiries: Rendering', inquiries.length, 'inquiries');
+                    return inquiries.map((inquiry) => {
+                        console.log('ContactInquiries: Rendering inquiry', inquiry);
+                        return (
+                          <TableRow key={inquiry.id}>
+                            <TableCell className="font-medium">{inquiry.name}</TableCell>
+                            <TableCell>{inquiry.email}</TableCell>
+                            <TableCell className="max-w-xs truncate">{inquiry.subject}</TableCell>
+                            <TableCell>
+                              <Badge variant={getStatusVariant(inquiry.status)}>
+                                {inquiry.status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-sm text-muted-foreground">
+                              {new Date(inquiry.submitted_at).toLocaleDateString()}
+                            </TableCell>
+                            <TableCell>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedInquiry(inquiry);
+                                  setDialogOpen(true);
+                                }}
+                              >
+                                View Details
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      });
+                    }
+                  })()}
               </TableBody>
             </Table>
           </div>

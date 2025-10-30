@@ -1,8 +1,8 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Plus, X, GripVertical } from 'lucide-react';
+import RichTextEditor from '@/components/admin/RichTextEditor';
 
 interface ItineraryDay {
   day: number;
@@ -123,12 +123,9 @@ export default function ItineraryBuilder({ itinerary, onChange }: ItineraryBuild
 
             <div className="space-y-2">
               <Label htmlFor={`day-description-${index}`}>Description</Label>
-              <Textarea
-                id={`day-description-${index}`}
-                value={day.description}
-                onChange={(e) => updateDay(index, 'description', e.target.value)}
-                placeholder="Describe the activities for this day"
-                rows={3}
+              <RichTextEditor
+                content={day.description}
+                onChange={(content) => updateDay(index, 'description', content)}
               />
             </div>
           </div>

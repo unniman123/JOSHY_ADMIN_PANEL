@@ -40,6 +40,9 @@ export interface Tour {
   created_at: string;
   updated_at: string;
   created_by?: string;
+  rating?: number;
+  review_count?: number;
+  location?: string;
 }
 
 export interface TourImage {

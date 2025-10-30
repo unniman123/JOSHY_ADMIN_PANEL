@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import type { HomepageSettings } from '@/types/database';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import ImageUpload from '@/components/admin/ImageUpload';
 
 export default function Settings() {
   const [loading, setLoading] = useState(true);
@@ -140,17 +141,12 @@ export default function Settings() {
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="hero_image_url">Hero Image URL</Label>
-                <Input
-                  id="hero_image_url"
-                  value={formData.hero_image_url}
-                  onChange={(e) =>
-                    setFormData({ ...formData, hero_image_url: e.target.value })
-                  }
-                  placeholder="https://example.com/image.jpg"
-                />
-              </div>
+              <ImageUpload
+                label="Hero Banner Image"
+                currentImage={formData.hero_image_url}
+                onImageChange={(url) => setFormData({ ...formData, hero_image_url: url })}
+                bucket="homepage-images"
+              />
 
               <Button type="submit" disabled={saving}>
                 {saving ? 'Saving...' : 'Save Changes'}

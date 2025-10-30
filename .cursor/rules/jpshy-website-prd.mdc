@@ -1,0 +1,1401 @@
+---
+alwaysApply: true
+---
+## 1. DATABASE SCHEMA & DATA MODELS
+
+### 1.1 Tour Model
+
+| Field | Data Type | Constraints | Purpose | Admin Control |
+|-------|-----------|-------------|---------|---------------|
+| id | UUID | PRIMARY KEY | Unique identifier | Auto-generated |
+| title | TEXT | NOT NULL, length < 200 | Tour name | Full CRUD |
+| slug | TEXT | NOT NULL, UNIQUE | URL-friendly identifier (auto-generated from title, editable) | Full CRUD |
+| short_description | TEXT | Max 200 characters | Summary for tour cards | Full CRUD |
+| overview | JSONB | For rich text content | Detailed description (bold, italic, underline, links, images) | Rich Text Editor |
+| main_image_url | TEXT | NOT NULL | Primary tour image (displayed in tour cards and hero) | Image Upload |
+| image_gallery_urls | JSONB | Array of objects | Gallery for tour detail page with reordering capability | Image Manager |
+| itinerary | JSONB | Array of objects | Day-by-day breakdown (day, title, description) | Dynamic Editor |
+| price | NUMERIC(10,2) | NOT NULL | Starting price in INR | Full CRUD |
+| duration_days | INTEGER | NOT NULL | Trip duration | Full CRUD |
+| is_featured | BOOLEAN | DEFAULT false | Shows on TourOffersSection (homepage) | Toggle Checkbox |
+| is_day_out_package | BOOLEAN | DEFAULT false | Shows on DayOutPackagesSection | Toggle Checkbox |
+| display_order | INTEGER | NOT NULL, DEFAULT 999 | Controls ordering in frontend sections (lower = appears first) | Number Input |
+| category_id | UUID | FOREIGN KEY → tour_category | Navigation hierarchy | Dropdown Selector |
+| is_published | BOOLEAN | DEFAULT false | Draft vs. Live (only published tours visible on website) | Toggle Checkbox |
+| created_at | TIMESTAMPTZ | DEFAULT now() | Audit trail | Read-only |
+| updated_at | TIMESTAMPTZ | DEFAULT now() | Audit trail | Read-only |
+| created_by | UUID | Tracks admin user | Audit trail | Read-only |
+
+**Example `image_gallery_urls` Structure**:
+```json
+[
+  { "url": "https://...", "order": 1 },
+  { "url": "https://...", "order": 2 },
+  { "url": "https://...", "order": 3 }
+]
+```
+
+**Example `overview` Structure** (Slate.js compatible):
+```json
+{
+  "type": "doc",
+  "children": [
+    {
+      "type": "paragraph",
+      "children": [{ "text": "Welcome to Kerala. ", "bold": true }]
+    }
+  ]
+}
+```
+
+**Example `itinerary` Structure**:
+```json
+[
+  {
+    "day": 1,
+    "title": "Arrival in Kochi",
+    "description": "Meet at airport, transfer to hotel"
+  },
+  {
+    "day": 2,
+    "title": "Backwater Houseboat",
+    "description": "Full day houseboat cruise"
+  }
+]
+```
+
+---
+
+### 1.2 TourCategory Model
+
+| Field | Data Type | Constraints | Purpose | Admin Control |
+|-------|-----------|-------------|---------|---------------|
+| id | UUID | PRIMARY KEY | Unique identifier | Auto-generated |
+| name | TEXT | NOT NULL, UNIQUE | Category name | Full CRUD |
+| slug | TEXT | NOT NULL, UNIQUE | URL-friendly version | Auto-generated, editable |
+| parent_category | ENUM | NOT NULL | Must be one of: "Kerala Travel", "Discover India", "Global Holiday" | Dropdown Selector |
+| display_order | INTEGER | NOT NULL, DEFAULT 999 | Ordering within parent category | Number Input |
+| created_at | TIMESTAMPTZ | DEFAULT now() | Audit trail | Read-only |
+
+**Valid Parent Categories** (hardcoded ENUM):
+- "Kerala Travel"
+- "Discover India"
+- "Global Holiday"
+
+**Example Structure**:
+```
+Kerala Travel
+├── Honeymoon
+├── Family Packages
+└── Adventure
+
+Discover India
+├── Spiritual Tours
+└── Cultural Tours
+
+Global Holiday
+├── Europe Tours
+└── Southeast Asia
+```
+
+---
+
+### 1.3 TourInquiry Model
+
+| Field | Data Type | Constraints | Purpose | Admin Control |
+|-------|-----------|-------------|---------|---------------|
+| id | UUID | PRIMARY KEY | Unique identifier | Auto-generated |
+| tour_id | UUID | FOREIGN KEY → tour (nullable) | Which tour inquiry is about | Read-only |
+| name | TEXT | NOT NULL | Inquirer name | Read-only |
+| email | TEXT | NOT NULL, valid email | Contact email | Read-only |
+| contact_number | TEXT | NOT NULL | Phone number | Read-only |
+| nationality | TEXT | Nullable | Country | Read-only |
+| date_of_travel | DATE | Nullable | Preferred travel date | Read-only |
+| number_of_people | TEXT | Nullable | e.g., "4 adults" | Read-only |
+| number_of_kids | TEXT | Nullable | e.g., "2 kids (5, 8 years)" | Read-only |
+| number_of_rooms | INTEGER | Nullable | Hotel rooms needed | Read-only |
+| hotel_category | ENUM | Nullable | "3-star" / "4-star" / "5-star" | Read-only |
+| message | TEXT | Nullable | Full inquiry message | Read-only |
+| status | ENUM | DEFAULT "New" | "New" / "Contacted" / "Closed" | Dropdown Update |
+| submitted_at | TIMESTAMPTZ | DEFAULT now() | When submitted | Read-only |
+
+---
+
+### 1.4 DayOutInquiry Model
+
+| Field | Data Type | Constraints | Purpose | Admin Control |
+|-------|-----------|-------------|---------|---------------|
+| id | UUID | PRIMARY KEY | Unique identifier | Auto-generated |
+| package_id | UUID | FOREIGN KEY → tour | Which day-out package | Read-only |
+| name | TEXT | NOT NULL | Inquirer name | Read-only |
+| mobile_no | TEXT | NOT NULL | Phone number | Read-only |
+| preferred_date | DATE | NOT NULL | Preferred date | Read-only |
+| number_of_people | INTEGER | NOT NULL | Number of participants | Read-only |
+| destination | TEXT | Nullable | Destination | Read-only |
+| special_comments | TEXT | Nullable | Special requests | Read-only |
+| status | ENUM | DEFAULT "New" | "New" / "Contacted" / "Closed" | Dropdown Update |
+| submitted_at | TIMESTAMPTZ | DEFAULT now() | When submitted | Read-only |
+
+---
+
+### 1.5 ContactInquiry Model
+
+| Field | Data Type | Constraints | Purpose | Admin Control |
+|-------|-----------|-------------|---------|---------------|
+| id | UUID | PRIMARY KEY | Unique identifier | Auto-generated |
+| name | TEXT | NOT NULL | Sender name | Read-only |
+| email | TEXT | NOT NULL, valid email | Sender email | Read-only |
+| subject | TEXT | NOT NULL | Subject line | Read-only |
+| message | TEXT | NOT NULL | Message content | Read-only |
+| status | ENUM | DEFAULT "New" | "New" / "Responded" / "Archived" | Dropdown Update |
+| submitted_at | TIMESTAMPTZ | DEFAULT now() | When submitted | Read-only |
+
+---
+
+### 1.6 SiteContent Model
+
+| Field | Data Type | Constraints | Purpose | Admin Control |
+|-------|-----------|-------------|---------|---------------|
+| id | UUID | PRIMARY KEY | Unique identifier | Auto-generated |
+| element_key | TEXT | NOT NULL, UNIQUE | Key for lookup | Read-only |
+| content_value | JSONB | Flexible structure | Actual content (image URL, text, etc.) | Varies |
+| updated_at | TIMESTAMPTZ | DEFAULT now() | Last updated | Read-only |
+
+**Valid Keys**:
+- `homepage_hero_banner` → `{ "image_url": "...", "title": "...", "subtitle": "..." }`
+
+---
+
+### 1.7 AdminUser Model (Simple Implementation)
+
+| Field | Data Type | Constraints | Purpose |
+|-------|-----------|-------------|---------|
+| id | UUID | PRIMARY KEY | Unique identifier |
+| email | TEXT | NOT NULL, UNIQUE | Admin login email |
+| password_hash | TEXT | NOT NULL, bcrypt | Hashed password (never stored plain) |
+| created_at | TIMESTAMPTZ | DEFAULT now() | When account created |
+
+**Note**: For now, single admin. To add more admins in future, just add more rows to this table.
+
+---
+
+## 2. API ENDPOINTS
+
+All endpoints use standard REST conventions. Base URL: `https://your-supabase-project.supabase.co/rest/v1`
+
+### 2.1 Tours API
+
+#### POST /api/tours
+Create a new tour.
+
+**Request**:
+```json
+{
+  "title": "Kerala Backwaters Explorer",
+  "slug": "kerala-backwaters-explorer",
+  "short_description": "Experience serene backwaters...",
+  "overview": { "type": "doc", "children": [...] },
+  "main_image_url": "https://bucket.../image.jpg",
+  "image_gallery_urls": [{ "url": "...", "order": 1 }],
+  "itinerary": [{ "day": 1, "title": "...", "description": "..." }],
+  "price": 15000,
+  "duration_days": 3,
+  "category_id": "uuid-here",
+  "display_order": 1,
+  "is_published": false
+}
+```
+
+**Response**: 201 Created
+```json
+{
+  "id": "uuid",
+  "created_at": "2025-10-15T...",
+  ...
+}
+```
+
+---
+
+#### GET /api/tours
+Fetch all tours (admin view - includes draft tours).
+
+**Query Parameters**:
+- `limit=20` (default: 20, max: 100)
+- `offset=0` (pagination)
+- `search=query` (search by title)
+- `category_id=uuid` (filter by category)
+- `order_by=display_order` (default) or `created_at`
+
+**Response**: 200 OK
+```json
+{
+  "data": [
+    { "id": "...", "title": "...", "is_published": false },
+    ...
+  ],
+  "total": 45,
+  "limit": 20,
+  "offset": 0
+}
+```
+
+---
+
+#### GET /api/tours/:id
+Fetch single tour details.
+
+**Response**: 200 OK
+```json
+{
+  "id": "uuid",
+  "title": "...",
+  "overview": {...},
+  ...
+}
+```
+
+---
+
+#### PUT /api/tours/:id
+Update existing tour.
+
+**Request**: Partial tour object (only include fields to update)
+```json
+{
+  "title": "Updated Title",
+  "is_published": true,
+  "display_order": 2
+}
+```
+
+**Response**: 200 OK (updated tour object)
+
+---
+
+#### DELETE /api/tours/:id
+Delete tour (soft delete recommended - set `is_deleted=true` or just archive).
+
+**Response**: 204 No Content
+
+---
+
+#### GET /api/tours/published
+Special endpoint for website (reads published tours only, ordered by display_order).
+
+**Query Parameters**:
+- `category=slug` (filter by category slug)
+- `featured=true` (only featured tours)
+
+**Response**: 200 OK
+```json
+{
+  "data": [
+    { "id": "...", "title": "...", "main_image_url": "...", "display_order": 1 }
+  ]
+}
+```
+
+**Note**: This endpoint is called by the website frontend and only returns published, ordered tours.
+
+---
+
+### 2.2 Tour Categories API
+
+#### GET /api/tour-categories
+Fetch all categories.
+
+**Response**: 200 OK
+```json
+{
+  "data": [
+    { "id": "uuid", "name": "Honeymoon", "parent_category": "Kerala Travel", "display_order": 1 },
+    ...
+  ]
+}
+```
+
+---
+
+#### POST /api/tour-categories
+Create new category.
+
+**Request**:
+```json
+{
+  "name": "Spiritual Tours",
+  "parent_category": "Discover India",
+  "display_order": 1
+}
+```
+
+**Response**: 201 Created
+
+---
+
+#### PUT /api/tour-categories/:id
+Update category.
+
+**Request**:
+```json
+{
+  "display_order": 2
+}
+```
+
+**Response**: 200 OK
+
+---
+
+#### DELETE /api/tour-categories/:id
+Delete category.
+
+**Response**: 204 No Content
+
+---
+
+### 2.3 Inquiries APIs
+
+#### GET /api/tour-inquiries
+Fetch all tour inquiries.
+
+**Query Parameters**:
+- `limit=20`
+- `offset=0`
+- `status=New` (filter by status)
+- `order_by=submitted_at` (newest first)
+
+**Response**: 200 OK
+```json
+{
+  "data": [
+    {
+      "id": "uuid",
+      "name": "John Doe",
+      "email": "john@example.com",
+      "status": "New",
+      "submitted_at": "2025-10-15T..."
+    }
+  ],
+  "total": 12
+}
+```
+
+---
+
+#### PUT /api/tour-inquiries/:id
+Update inquiry status.
+
+**Request**:
+```json
+{
+  "status": "Contacted"
+}
+```
+
+**Response**: 200 OK
+
+---
+
+#### GET /api/day-out-inquiries
+Fetch day-out inquiries (same structure as tour inquiries).
+
+---
+
+#### PUT /api/day-out-inquiries/:id
+Update day-out inquiry status.
+
+---
+
+#### GET /api/contact-inquiries
+Fetch contact form inquiries.
+
+---
+
+#### PUT /api/contact-inquiries/:id
+Update contact inquiry status.
+
+---
+
+### 2.4 Site Content API
+
+#### GET /api/site-content/:element_key
+Fetch specific site content.
+
+**Example**: `GET /api/site-content/homepage_hero_banner`
+
+**Response**: 200 OK
+```json
+{
+  "element_key": "homepage_hero_banner",
+  "content_value": {
+    "image_url": "https://...",
+    "title": "Welcome to Kerala",
+    "subtitle": "Experience Paradise"
+  },
+  "updated_at": "2025-10-15T..."
+}
+```
+
+---
+
+#### PUT /api/site-content/:element_key
+Update site content.
+
+**Request**:
+```json
+{
+  "content_value": {
+    "image_url": "https://new-image.jpg",
+    "title": "New Title"
+  }
+}
+```
+
+**Response**: 200 OK
+
+---
+
+### 2.5 File Upload API
+
+#### POST /api/upload/image
+Upload image to Supabase Storage.
+
+**Request**: `multipart/form-data`
+- Field: `file` (image file, max 10MB)
+- Field: `bucket` (e.g., "tour-images", "site-content")
+
+**Response**: 200 OK
+```json
+{
+  "url": "https://your-project.supabase.co/storage/v1/object/public/tour-images/...",
+  "path": "tour-images/uuid.jpg"
+}
+```
+
+---
+
+### 2.6 Admin Authentication API
+
+#### POST /api/auth/login
+Login to admin panel.
+
+**Request**:
+```json
+{
+  "email": "admin@example.com",
+  "password": "password123"
+}
+```
+
+**Response**: 200 OK
+```json
+{
+  "token": "jwt-token-here",
+  "email": "admin@example.com"
+}
+```
+
+**Note**: Token stored in localStorage on admin panel. Used in Authorization header for subsequent requests.
+
+---
+
+#### POST /api/auth/logout
+Logout (client-side: clear token from localStorage).
+
+---
+
+## 3. ADMIN PANEL STRUCTURE & UI/UX
+
+### 3.1 Navigation & Pages
+
+```
+Admin Dashboard (/)
+├── Dashboard (/admin)
+│   ├── Quick stats (new inquiries count)
+│   └── Quick links
+│
+├── Tours Management
+│   ├── All Tours (/admin/tours)
+│   ├── Add New Tour (/admin/tours/new)
+│   └── Edit Tour (/admin/tours/:id)
+│
+├── Categories (/admin/categories)
+│
+├── Day Out Packages (/admin/day-out-packages)
+│
+├── Inquiries Management
+│   ├── Tour Inquiries (/admin/inquiries/tours)
+│   ├── Day Out Inquiries (/admin/inquiries/day-out)
+│   └── Contact Inquiries (/admin/inquiries/contact)
+│
+└── Site Settings
+    └── Homepage Settings (/admin/settings/homepage)
+```
+
+---
+
+### 3.2 Page Details
+
+#### Dashboard (/admin)
+- Display count of "New" inquiries (tour, day-out, contact)
+- Quick link buttons: "Add New Tour", "View Inquiries"
+- Simple, clean interface
+
+---
+
+#### All Tours Page (/admin/tours)
+
+**Data Table Columns**:
+| Column | Type | Sortable | Filterable |
+|--------|------|----------|-----------|
+| Title | text | Yes | Yes (search) |
+| Category | select | No | Yes (dropdown) |
+| Duration | number | Yes | No |
+| Price | number | Yes | No |
+| Published | badge | Yes | Yes |
+| Featured | badge | No | No |
+| Day Out | badge | No | No |
+| Actions | buttons | No | No |
+
+**Features**:
+- Pagination (20 tours per page)
+- Search by title
+- Filter by category
+- Sort by: Title, Duration, Price, Created Date
+- Action buttons: Edit (pencil icon), Delete (trash icon, with confirmation)
+- "Add New Tour" button (blue, top-right)
+
+---
+
+#### Add/Edit Tour Page (/admin/tours/new, /admin/tours/edit/:id)
+
+**Form Sections**:
+
+**1. Basic Information**
+- Title (text input, required)
+- Slug (auto-generated from title, but editable)
+- Category (dropdown selector, required)
+- Short Description (textarea, max 200 chars, character counter)
+
+**2. Content**
+- Overview (rich text editor with: bold, italic, underline, link, image insert)
+- *Editor Recommendation*: TipTap (lightweight, React-friendly, or alternatively Slate.js)
+
+**3. Images**
+- Main Image (file upload, single)
+  - Preview of current image
+  - "Upload" button → opens file picker
+  - "Remove" option
+- Gallery Images (multi-image upload with reordering)
+  - Drag-and-drop to reorder
+  - Each image has "Remove" button
+  - "Add Image" button to upload more
+
+**4. Itinerary**
+- Dynamic form section
+- "Add Day" button
+- For each day:
+  - Day Number (auto-incremented, read-only display)
+  - Title (text input)
+  - Description (textarea)
+  - "Remove Day" button
+  - Drag-to-reorder capability
+
+**5. Pricing & Duration**
+- Price (number input, required)
+- Duration Days (number input, required)
+
+**6. Display Settings**
+- Display Order (number input, default 999)
+- Is Featured (checkbox)
+- Is Day Out Package (checkbox)
+- Is Published (checkbox, required for visibility on website)
+
+**7. Actions**
+- Save Draft (button) → keeps is_published = false
+- Publish (button) → sets is_published = true
+- Delete (button, with confirmation modal)
+
+**UX Considerations**:
+- Auto-save to draft every 30 seconds
+- Show unsaved changes indicator
+- Confirmation when leaving with unsaved changes
+- Success toast on save
+
+---
+
+#### Categories Page (/admin/categories)
+
+**Display**:
+- Three sections, one for each parent category:
+  - "Kerala Travel"
+  - "Discover India"
+  - "Global Holiday"
+- Under each parent, list all sub-categories
+
+**Features**:
+- For each category: Edit button, Delete button
+- "Add Category" button (opens modal or new section)
+- Each category shows: Name, Display Order
+
+**Modal/Form**:
+- Name (text input)
+- Parent Category (radio buttons: Kerala Travel / Discover India / Global Holiday)
+- Display Order (number input)
+- Save / Cancel buttons
+
+---
+
+#### Tour Inquiries Page (/admin/inquiries/tours)
+
+**Data Table Columns**:
+| Column | Type | Sortable |
+|--------|------|----------|
+| Name | text | Yes |
+| Email | text | Yes |
+| Tour | text | No |
+| Status | badge (New/Contacted/Closed) | Yes |
+| Date | date | Yes |
+| Actions | buttons | No |
+
+**Features**:
+- Pagination (20 per page)
+- Filter by Status (dropdown)
+- Sort by: Date (newest first), Status, Name
+- Click row → opens modal showing full details
+- Modal shows: All fields (read-only), Status dropdown (editable)
+- Modal actions: Update Status, Close Modal
+
+---
+
+#### Day Out Inquiries Page (/admin/inquiries/day-out)
+Same structure as Tour Inquiries page.
+
+---
+
+#### Contact Inquiries Page (/admin/inquiries/contact)
+Same structure, but Status options: "New" / "Responded" / "Archived"
+
+---
+
+#### Homepage Settings Page (/admin/settings/homepage)
+
+**Section: Hero Banner**
+- Current image preview
+- "Change Image" button → file upload
+- Title input (text)
+- Subtitle input (text)
+- Save button
+- Success confirmation
+
+---
+
+## 4. SUPABASE CONFIGURATION
+
+### 4.1 Storage Buckets
+
+**Bucket 1: tour-images**
+- Visibility: Public (website needs to read these)
+- Max file size: 10MB
+- Allowed MIME types: image/jpeg, image/png, image/webp
+- Path structure: `/tour-images/{tour-id}/{filename}`
+
+**Bucket 2: site-content**
+- Visibility: Public
+- Max file size: 10MB
+- Path structure: `/site-content/{element-key}/{filename}`
+
+---
+
+### 4.2 Row Level Security (RLS) Policies
+
+**For Website (Anonymous Access)**:
+```sql
+-- Tours: Can only select published tours
+CREATE POLICY "website_select_published_tours" ON tour
+  FOR SELECT TO anon
+  USING (is_published = true);
+
+-- Tour Categories: Can select all
+CREATE POLICY "website_select_categories" ON tour_category
+  FOR SELECT TO anon
+  USING (true);
+
+-- Inquiries: Can insert new inquiries
+CREATE POLICY "website_insert_inquiries" ON tour_inquiry
+  FOR INSERT TO anon
+  WITH CHECK (true);
+
+CREATE POLICY "website_insert_day_out_inquiries" ON day_out_inquiry
+  FOR INSERT TO anon
+  WITH CHECK (true);
+
+CREATE POLICY "website_insert_contact_inquiries" ON contact_inquiry
+  FOR INSERT TO anon
+  WITH CHECK (true);
+
+-- SiteContent: Can read
+CREATE POLICY "website_select_site_content" ON site_content
+  FOR SELECT TO anon
+  USING (true);
+```
+
+**For Admin (Authenticated Access)**:
+```sql
+-- Admin has full access to all tables
+CREATE POLICY "admin_all_tours" ON tour
+  FOR ALL TO authenticated
+  USING (true)
+  WITH CHECK (true);
+
+CREATE POLICY "admin_all_categories" ON tour_category
+  FOR ALL TO authenticated
+  USING (true)
+  WITH CHECK (true);
+
+-- Etc. for all tables
+```
+
+---
+
+## 5. TECHNICAL IMPLEMENTATION NOTES
+
+### 5.1 Image Optimization
+
+Supabase provides built-in image transformation capabilities that allow resizing and compressing images on the fly. Implementation approach:
+
+**On Upload**:
+- Store original image in Supabase Storage
+- Return the storage path
+
+**On Display** (website):
+- Use image transformation in URL parameters
+- Example: `image-url.jpg?width=800&quality=75`
+- Supabase CDN handles caching automatically
+
+**For Admin Preview**:
+- Show thumbnail (transformed version)
+- Link to full resolution if needed
+
+---
+
+### 5.2 Query Optimization for Admin Panel
+
+**Strategies**:
+
+1. **Pagination**: Always paginate large datasets (20 items per page default)
+2. **Indexes**: Create indexes on frequently queried fields:
+   ```sql
+   CREATE INDEX idx_tour_is_published ON tour(is_published);
+   CREATE INDEX idx_tour_category_id ON tour(category_id);
+   CREATE INDEX idx_inquiry_status ON tour_inquiry(status);
+   CREATE INDEX idx_inquiry_submitted_at ON tour_inquiry(submitted_at DESC);
+   ```
+
+3. **Lazy Loading**: Load only necessary fields in list views
+   ```sql
+   -- List view query
+   SELECT id, title, category_id, price, is_published, display_order
+   FROM tour
+   ORDER BY display_order ASC
+   LIMIT 20 OFFSET 0;
+   ```
+
+4. **N+1 Prevention**: Fetch related data in single query
+   ```sql
+   -- Instead of fetching tour, then fetching category separately
+   SELECT t.*, c.name as category_name
+   FROM tour t
+   JOIN tour_category c ON t.category_id = c.id
+   WHERE t.id = $1;
+   ```
+
+---
+
+### 5.3 Rich Text Editor Implementation
+
+**Recommended**: TipTap (Vue-based, but has React adapters) or Slate.js
+
+**Storage Format**: Store as JSONB in database (not as HTML)
+
+**Advantages**:
+- Easier to validate on server
+- Can extract plain text for search
+- More flexible for future enhancements
+
+**Example Implementation**:
+```javascript
+// On admin panel, user edits rich text
+// Save to database as JSON
+// On website, render JSON to HTML using custom renderer or existing library
+
+const overview = {
+  type: "doc",
+  children: [
+    { type: "paragraph", children: [{ text: "Welcome to Kerala" }] }
+  ]
+};
+```
+
+---
+
+### 5.4 Image Gallery Reordering
+
+**Implementation**:
+```javascript
+// image_gallery_urls stored as JSON array with order field
+const images = [
+  { url: "https://...", order: 1 },
+  { url: "https://...", order: 2 },
+  { url: "https://...", order: 3 }
+];
+
+// On admin drag-to-reorder:
+// User drags image 3 to position 1
+// Frontend updates order field:
+const reorderedImages = [
+  { url: "https://... (was 3)", order: 1 },
+  { url: "https://... (was 1)", order: 2 },
+  { url: "https://... (was 2)", order: 3 }
+];
+
+// Send to API: PUT /api/tours/:id { image_gallery_urls: reorderedImages }
+
+// On website, fetch galleries and sort by order:
+// ORDER BY image_gallery_urls->>'order' ASC
+```
+
+---
+
+## 6. SECURITY CONSIDERATIONS
+
+### 6.1 Authentication
+- Single admin login with email + password
+- Password stored as bcrypt hash (never plain text)
+- JWT token issued on login, stored in localStorage on admin panel
+- Token expires after 1 hour (configurable)
+
+### 6.2 Authorization
+- All admin routes require valid JWT token
+- RLS policies enforce row-level permissions
+
+### 6.3 Input Validation
+- Server-side validation for all form inputs
+- Sanitize text inputs (prevent XSS)
+- File upload validation: file type, file size
+- Email format validation
+
+### 6.4 CSRF Protection
+- Use SameSite cookies for session management (if using sessions instead of JWT)
+- With JWT, CSRF risk is lower but still apply standard practices
+
+---
+
+## 7. INTEGRATION WITH EXISTING WEBSITE
+
+### 7.1 Website Frontend Changes
+
+**In HeroBanner.tsx**:
+```javascript
+// Old (hardcoded):
+const title = "Welcome to Kerala";
+
+// New (fetched from API):
+const [heroContent, setHeroContent] = useState(null);
+
+useEffect(() => {
+  fetch(`/api/site-content/homepage_hero_banner`)
+    .then(r => r.json())
+    .then(data => setHeroContent(data.content_value));
+}, []);
+
+return <img src={heroContent?.image_url} alt="Banner" />;
+```
+
+**In TourOffersSection.tsx**:
+```javascript
+// Old (hardcoded array):
+const tours = [{...}, {...}];
+
+// New (fetched from API):
+const [tours, setTours] = useState([]);
+
+useEffect(() => {
+  fetch(`/api/tours/published?featured=true`)
+    .then(r => r.json())
+    .then(data => setTours(data.data));
+}, []);
+```
+
+**In DayOutPackagesSection.tsx**:
+```javascript
+// Similar to TourOffersSection but with is_day_out_package filter
+fetch(`/api/tours/published?day_out=true`)
+```
+
+**In InquiryForm.tsx**:
+```javascript
+// Old (no submission):
+handleSubmit() { console.log("Form submitted"); }
+
+// New (post to API):
+handleSubmit(formData) {
+  fetch(`/api/tour-inquiries`, {
+    method: "POST",
+    body: JSON.stringify(formData)
+  }).then(() => alert("Inquiry submitted"));
+}
+```
+
+Similar changes for ContactForm.tsx and DayOutInquiry submission
+
+---
+
+## 8. ERROR HANDLING & VALIDATION
+
+### 8.1 Form Validation (Admin Panel)
+
+**Client-Side Validation**:
+- Title: Required, max 200 characters
+- Slug: Required, must be unique, alphanumeric + hyphens only
+- Category: Required
+- Price: Required, must be positive number
+- Duration: Required, must be positive integer
+- Main Image: Required, must be image file, max 10MB
+- Gallery Images: Each must be valid image, max 10MB
+- Itinerary days: Each day must have title and description
+
+**Server-Side Validation**:
+- Duplicate all client validations
+- Check slug uniqueness against database
+- Verify category_id exists
+- Validate JSONB structure for overview and itinerary
+- Verify image URLs are accessible
+
+**Error Response Format**:
+```json
+{
+  "success": false,
+  "errors": {
+    "title": "Title is required",
+    "slug": "Slug must be unique",
+    "price": "Price must be a positive number"
+  }
+}
+```
+
+---
+
+### 8.2 API Error Responses
+
+**400 Bad Request** (Validation failed):
+```json
+{
+  "error": "Validation failed",
+  "details": { "field": "error message" }
+}
+```
+
+**401 Unauthorized** (Invalid token):
+```json
+{
+  "error": "Unauthorized. Please login."
+}
+```
+
+**403 Forbidden** (RLS policy violation):
+```json
+{
+  "error": "Access denied"
+}
+```
+
+**404 Not Found**:
+```json
+{
+  "error": "Resource not found"
+}
+```
+
+**500 Server Error**:
+```json
+{
+  "error": "Internal server error"
+}
+```
+
+---
+
+### 8.3 File Upload Error Handling
+
+**Errors to handle**:
+- File too large (> 10MB): "File must be under 10MB"
+- Invalid file type: "Only image files (JPG, PNG, WebP) are allowed"
+- Upload failed: "File upload failed. Please try again"
+- Network error: "Connection lost. Please check your internet"
+
+---
+
+## 9. PERFORMANCE REQUIREMENTS
+
+### 9.1 Target Performance Metrics
+
+| Metric | Target | Notes |
+|--------|--------|-------|
+| Admin dashboard load | < 2 seconds | Initial page load |
+| Tours list (20 items) | < 1.5 seconds | With pagination |
+| Tour detail page load | < 2 seconds | Rich text + gallery |
+| Image upload | < 5 seconds | Including processing |
+| Status update | < 500ms | Quick inquiry status change |
+| Website tour card render | < 1 second | Featured tours from API |
+
+### 9.2 Caching Strategy
+
+**For Website (Client-Side)**:
+- Cache featured tours list for 5 minutes
+- Cache homepage hero banner for 10 minutes
+- Cache tour categories for 1 hour
+- Implementation: localStorage or TanStack Query
+
+**For Admin Panel (No Caching)**:
+- Always fetch fresh data from API
+- Reason: Admin needs latest data to see changes
+
+**For Images**:
+- Supabase CDN handles caching automatically
+- Browser cache: 30 days for image assets
+
+---
+
+## 10. DEPLOYMENT & ENVIRONMENT SETUP
+
+### 10.1 Environment Variables
+
+**Admin Panel (.env.local)**:
+```
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key
+VITE_ADMIN_API_URL=https://your-api.com/api
+VITE_ADMIN_EMAIL=admin@example.com (optional, for demo)
+```
+
+**Website (.env.local)**:
+```
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key
+VITE_API_URL=https://your-api.com/api
+```
+
+### 10.2 Database Setup Script
+
+PostgreSQL SQL to be run in Supabase:
+
+```sql
+-- Enable UUID extension
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- Tour Categories Table
+CREATE TABLE tour_category (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name TEXT NOT NULL UNIQUE,
+  slug TEXT NOT NULL UNIQUE,
+  parent_category TEXT NOT NULL CHECK (parent_category IN ('Kerala Travel', 'Discover India', 'Global Holiday')),
+  display_order INTEGER NOT NULL DEFAULT 999,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Tours Table
+CREATE TABLE tour (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  title TEXT NOT NULL,
+  slug TEXT NOT NULL UNIQUE,
+  short_description TEXT,
+  overview JSONB,
+  main_image_url TEXT,
+  image_gallery_urls JSONB DEFAULT '[]'::jsonb,
+  itinerary JSONB DEFAULT '[]'::jsonb,
+  price NUMERIC(10,2) NOT NULL,
+  duration_days INTEGER NOT NULL,
+  is_featured BOOLEAN DEFAULT false,
+  is_day_out_package BOOLEAN DEFAULT false,
+  display_order INTEGER NOT NULL DEFAULT 999,
+  category_id UUID NOT NULL REFERENCES tour_category(id),
+  is_published BOOLEAN DEFAULT false,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now(),
+  created_by UUID
+);
+
+-- Tour Inquiry Table
+CREATE TABLE tour_inquiry (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  tour_id UUID REFERENCES tour(id),
+  name TEXT NOT NULL,
+  email TEXT NOT NULL,
+  contact_number TEXT NOT NULL,
+  nationality TEXT,
+  date_of_travel DATE,
+  number_of_people TEXT,
+  number_of_kids TEXT,
+  number_of_rooms INTEGER,
+  hotel_category TEXT CHECK (hotel_category IN ('3-star', '4-star', '5-star')),
+  message TEXT,
+  status TEXT NOT NULL DEFAULT 'New' CHECK (status IN ('New', 'Contacted', 'Closed')),
+  submitted_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Day Out Inquiry Table
+CREATE TABLE day_out_inquiry (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  package_id UUID NOT NULL REFERENCES tour(id),
+  name TEXT NOT NULL,
+  mobile_no TEXT NOT NULL,
+  preferred_date DATE NOT NULL,
+  number_of_people INTEGER NOT NULL,
+  destination TEXT,
+  special_comments TEXT,
+  status TEXT NOT NULL DEFAULT 'New' CHECK (status IN ('New', 'Contacted', 'Closed')),
+  submitted_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Contact Inquiry Table
+CREATE TABLE contact_inquiry (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name TEXT NOT NULL,
+  email TEXT NOT NULL,
+  subject TEXT NOT NULL,
+  message TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'New' CHECK (status IN ('New', 'Responded', 'Archived')),
+  submitted_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Site Content Table
+CREATE TABLE site_content (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  element_key TEXT NOT NULL UNIQUE,
+  content_value JSONB NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Admin User Table
+CREATE TABLE admin_user (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  email TEXT NOT NULL UNIQUE,
+  password_hash TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Create Indexes
+CREATE INDEX idx_tour_is_published ON tour(is_published);
+CREATE INDEX idx_tour_category_id ON tour(category_id);
+CREATE INDEX idx_tour_is_featured ON tour(is_featured);
+CREATE INDEX idx_tour_display_order ON tour(display_order);
+CREATE INDEX idx_inquiry_status ON tour_inquiry(status);
+CREATE INDEX idx_inquiry_submitted_at ON tour_inquiry(submitted_at DESC);
+CREATE INDEX idx_dayout_inquiry_status ON day_out_inquiry(status);
+CREATE INDEX idx_contact_inquiry_status ON contact_inquiry(status);
+
+-- Enable RLS
+ALTER TABLE tour ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tour_category ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tour_inquiry ENABLE ROW LEVEL SECURITY;
+ALTER TABLE day_out_inquiry ENABLE ROW LEVEL SECURITY;
+ALTER TABLE contact_inquiry ENABLE ROW LEVEL SECURITY;
+ALTER TABLE site_content ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies (Anonymous - Website)
+CREATE POLICY "anon_select_published_tours" ON tour FOR SELECT TO anon USING (is_published = true);
+CREATE POLICY "anon_select_categories" ON tour_category FOR SELECT TO anon USING (true);
+CREATE POLICY "anon_select_site_content" ON site_content FOR SELECT TO anon USING (true);
+CREATE POLICY "anon_insert_tour_inquiry" ON tour_inquiry FOR INSERT TO anon WITH CHECK (true);
+CREATE POLICY "anon_insert_dayout_inquiry" ON day_out_inquiry FOR INSERT TO anon WITH CHECK (true);
+CREATE POLICY "anon_insert_contact_inquiry" ON contact_inquiry FOR INSERT TO anon WITH CHECK (true);
+
+-- RLS Policies (Admin - Full Access)
+CREATE POLICY "admin_all_tours" ON tour FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "admin_all_categories" ON tour_category FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "admin_all_inquiries" ON tour_inquiry FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "admin_all_dayout" ON day_out_inquiry FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "admin_all_contact" ON contact_inquiry FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "admin_all_site_content" ON site_content FOR ALL TO authenticated USING (true) WITH CHECK (true);
+```
+
+---
+
+## 11. TESTING REQUIREMENTS
+
+### 11.1 Functional Testing (Admin Panel)
+
+**Tours Management**:
+- [ ] Create tour with all fields
+- [ ] Edit tour and verify changes
+- [ ] Delete tour with confirmation
+- [ ] Reorder gallery images
+- [ ] Reorder tour cards (display_order)
+- [ ] Publish/unpublish tour
+- [ ] Search tours by title
+- [ ] Filter tours by category
+- [ ] Toggle featured flag
+- [ ] Toggle day-out package flag
+
+**Categories**:
+- [ ] Create category under each parent
+- [ ] Edit category name
+- [ ] Delete category
+- [ ] Reorder categories
+
+**Inquiries**:
+- [ ] View all inquiries
+- [ ] Update inquiry status
+- [ ] Pagination works correctly
+- [ ] Filter by status
+
+**Homepage Settings**:
+- [ ] Upload new hero image
+- [ ] Update hero title and subtitle
+- [ ] Changes reflect on website
+
+### 11.2 Integration Testing
+
+**Website + Admin**:
+- [ ] Featured tour appears on homepage
+- [ ] Unpublished tour does NOT appear on website
+- [ ] Tour ordering matches display_order
+- [ ] Inquiry submitted on website appears in admin panel
+- [ ] Admin status change doesn't affect website display
+- [ ] Hero banner change reflects on website within 5 minutes
+
+### 11.3 Performance Testing
+
+- [ ] Load admin tours list with 100+ tours (still under 2s)
+- [ ] Upload 5MB image (completes in under 5s)
+- [ ] Concurrent admin and website users don't affect each other
+
+---
+
+## 12. KNOWN LIMITATIONS & FUTURE ENHANCEMENTS
+
+### 12.1 Current Limitations
+
+1. **Single Admin Only**: No multi-user collaboration or audit logs per user
+2. **No Workflow**: Tours go directly from draft to published, no approval process
+3. **No Versioning**: No ability to revert changes (only current version stored)
+4. **No Bulk Operations**: Can't edit multiple tours at once
+5. **No Image Optimization**: Images stored as-is, no automatic compression
+6. **No Email Notifications**: Admin doesn't receive email when new inquiry submitted
+7. **No Advanced Analytics**: No data on which tours get most inquiries
+8. **No Tour Duplication**: Can't clone existing tours
+
+### 12.2 Future Enhancements
+
+1. **Multi-Admin with Roles**: Super Admin, Editor, Viewer roles
+2. **Approval Workflow**: Editors create, Super Admin publishes
+3. **Version Control**: Track all changes, ability to revert
+4. **Bulk Operations**: Edit multiple tours, bulk status updates
+5. **Image Optimization**: Auto-compress, generate thumbnails
+6. **Email Notifications**: Admin gets emails for new inquiries
+7. **Analytics Dashboard**: Inquiry trends, popular tours
+8. **Tour Duplication**: Clone tour with all content
+9. **Multi-Language Support**: Tours in multiple languages
+10. **Scheduled Publishing**: Tour goes live at specific date/time
+
+---
+
+## 13. DELIVERABLES CHECKLIST
+
+### Phase 1: Backend Setup
+- [ ] Supabase project created
+- [ ] All tables created with RLS policies
+- [ ] Storage buckets configured
+- [ ] Indexes created for optimization
+- [ ] Admin user created (email + password hash)
+
+### Phase 2: API Development
+- [ ] All endpoints implemented and tested
+- [ ] Input validation on all routes
+- [ ] Error handling with proper HTTP status codes
+- [ ] File upload endpoint working
+- [ ] Authentication endpoint working
+
+### Phase 3: Admin Panel Frontend
+- [ ] Navigation structure implemented
+- [ ] Tours CRUD pages complete
+- [ ] Categories management page complete
+- [ ] Inquiries management pages complete
+- [ ] Homepage settings page complete
+- [ ] Rich text editor integrated
+- [ ] Image upload and reordering working
+- [ ] Itinerary dynamic form working
+- [ ] Responsive design (mobile-friendly)
+
+### Phase 4: Website Integration
+- [ ] HeroBanner.tsx fetches from API
+- [ ] TourOffersSection.tsx fetches from API
+- [ ] DayOutPackagesSection.tsx fetches from API
+- [ ] All inquiry forms submit to API
+- [ ] Website only displays published tours
+
+### Phase 5: Testing & Deployment
+- [ ] All functional tests passed
+- [ ] Integration tests passed
+- [ ] Performance tested
+- [ ] Security review completed
+- [ ] Deployed to staging
+- [ ] Deployed to production
+
+---
+
+## 14. GLOSSARY & DEFINITIONS
+
+| Term | Definition |
+|------|-----------|
+| **RLS** | Row Level Security - Database-level access control |
+| **JWT** | JSON Web Token - Used for authentication |
+| **JSONB** | JSON Binary - PostgreSQL data type for storing JSON |
+| **Slug** | URL-friendly text (e.g., "kerala-backwaters-explorer") |
+| **Featured** | Tour displayed on homepage TourOffersSection |
+| **Day Out Package** | Short trip packages (single day) |
+| **Display Order** | Numeric field controlling card ordering (lower = appears first) |
+| **Published** | Tour is live and visible on website |
+| **Draft** | Tour is hidden from website, only visible in admin |
+| **RLS Policy** | Rule that defines who can access which data |
+| **MIME Type** | File type indicator (e.g., image/jpeg) |
+
+---
+
+## 15. REFERENCE & RESOURCES
+
+### Tools & Libraries
+- **Database**: PostgreSQL (via Supabase)
+- **Authentication**: JWT + Custom login
+- **Rich Text Editor**: TipTap or Slate.js
+- **File Upload**: Supabase Storage SDK
+- **Data Table**: TanStack Table (React Table v8)
+- **UI Components**: Shadcn/UI (already in use)
+- **Image Transformation**: Supabase Image API
+
+### Documentation Links
+- Supabase Docs: https://supabase.com/docs
+- Supabase RLS: https://supabase.com/docs/guides/auth/row-level-security
+- TipTap Editor: https://tiptap.dev/
+- TanStack Table: https://tanstack.com/table/v8
+- Shadcn/UI: https://ui.shadcn.com/
+
+---
+
+## 16. APPROVAL & SIGN-OFF
+
+| Role | Name | Status | Date |
+|------|------|--------|------|
+| Project Lead | [Your Name] | Pending | - |
+| Tech Lead | [Your Name] | Pending | - |
+| Product Owner | [Your Name] | Pending | - |
+
+---
+
+**Document Version**: 1.0  
+**Last Updated**: October 2025  
+**Status**: Ready for Development---
+alwaysApply: true
+---

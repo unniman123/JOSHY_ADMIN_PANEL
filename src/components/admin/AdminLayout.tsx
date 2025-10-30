@@ -84,7 +84,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             </Link>
           ))}
           
-          <Collapsible open={isInquiriesOpen} className="space-y-1">
+          <Collapsible defaultOpen={isInquiriesOpen} className="space-y-1">
             <CollapsibleTrigger asChild>
               <Button
                 variant={isInquiriesOpen ? "secondary" : "ghost"}

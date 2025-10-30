@@ -1,0 +1,95 @@
+## Admin Panel Plan
+
+**Phase 0 – Evidence Review**
+- Re-read `johsy-website-prd.mdc`, `webste_info.md`, latest migrations, `TourForm`, inquiries pages to ensure alignment with specs.
+- Verify current DB state via Supabase MCP (`list_tables`, `list_migrations`, `get_project`) to confirm `tour_sections`, `tour_images`, `tours` fields exist and policies match plan.
+
+**Phase 1 – Data Model & API Hardening**
+- Create `vw_published_tours`, `vw_tour_by_slug`, and related views/rpc for categories, featured/day-out lists; document schemas and sample queries.
+- Seed `user_roles` with at least one admin user; add SQL snippet to onboarding docs.
+- Add uniqueness checks for slug (client-side preflight + DB constraint verification); surface friendly errors.
+- Enhance RLS (double-check anon only reads published data, admin CRUD allowed; lock down writes on new tables).
+- Write migrations/inserts to clean up legacy JSON gallery data into `tour_images` if any remain.
+
+**Phase 2 – Admin UI Enhancements**
+- Wire autosave & unsaved-changes warning in `TourForm`; autosave drafts every 30s when dirty & `!saving`.
+- Replace `image_gallery_urls` reliance with data fetched from `tour_images`; adjust state to reflect DB data after load.
+- Add section management UI (overview, itinerary, optional custom) to CRUD entries stored in `tour_sections`.
+- Implement slug availability check + error display.
+- Add rating/review/location inputs & validations; ensure min/max values, numeric conversion.
+- Build small admin role management screen (list `user_roles`, allow adding/removing admins if required by PRD).
+- Improve inquiries tables with pagination, filtering (TanStack Table); ensure status updates persist.
+- Add Day Out / Contact detail modals to include all fields & notes entry (if PRD requires admin notes).
+- Wire homepage settings to allow hero upload using new storage path.
+
+**Phase 3 – QA & Testing**
+- Write unit/integration tests (Jest/React Testing Library) for `TourForm` (draft create, publish, slug validation), image upload component, inquiry status handling.
+- Manual QA checklist: create/publish tour, reorder images, update itinerary, check RLS via anon key, verify admin gating on protected routes.
+- Update README/admin docs with env vars, upload paths, view usage, testing instructions.
+
+---
+
+## Website Plan
+
+**Phase 0 – Evidence Review**
+- Revisit `webste_info.md`, key components (`Index`, `Tours`, `TourDetail`, `TourOffersSection`, `TourInquiryForm`), and utility files to confirm current data expectations.
+
+**Phase 1 – Data Fetch Integration**
+- Replace mock fetch functions in `src/lib/api.ts` with Supabase client (using anon key) or REST endpoints hitting new DB views.
+  - `getAllTours` → query `vw_published_tours`.
+  - `getTourBySlug` → query `vw_tour_by_slug`.
+  - `getToursByCategoryAndSubcategory`, `getRelatedTours`, `unifiedSearch` → implement Supabase filters (category slug, display_order, maybe text search).
+  - `getFeaturedTours`, `getDayOutPackages` → filter view results by `is_featured` / `is_day_out_package`.
+- Update Tour card data mapping (`image` → first gallery image or `featured_image_url`), ensure `price` format, `duration` units.
+
+**Phase 2 – Inquiry Submission Wiring**
+- Replace placeholder submit handlers (`submitTourEnquiry`, etc.) with Supabase `insert` into `inquiries`, `day_out_inquiry`, `contact_inquiry`; handle response, display success/error toasts.
+- Add client-side validation aligning with admin form (email, travel date, adults/kids counts).
+
+**Phase 3 – Rendering Updates**
+- Render overview HTML safely (e.g., use trusted sanitizer before `dangerouslySetInnerHTML` or ensure admin content sanitized).
+- Render itinerary from `tour_sections` (parse `content.itinerary`), fallback to string if missing.
+- Update hero, offers sections to fetch from admin-managed tables (`homepage_settings` or `site_content`).
+- Display rating, review count, location when present; add optional UI enhancements (badges, map link).
+- Add error/loading states using React Query: skeletons for hero, tours grid, detail page.
+
+**Phase 4 – SEO & Analytics (future but noted)**
+- Update meta tags to prefer `seoTitle`, `seoDescription` (fallback to title/description).
+- Provide placeholders for structured data / analytics hooks.
+
+**Phase 5 – QA**
+- Integration tests for data fetching (mock Supabase).
+- Manual end-to-end run: list page, category filter, detail page, search, inquiry submission.
+
+---
+
+## Integration Plan (Connecting Admin & Website)
+
+**Phase 0 – Shared Configuration**
+- Ensure both projects share env vars: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`; document placement in hosting providers.
+- Configure Supabase CORS allowed origins with production/staging domains.
+- Establish naming for storage paths (`tour-images/{tourId}/...`), document in both repos.
+
+**Phase 1 – API & Permissions**
+- Finalize DB views/rpc and publish in docs for website consumption.
+- Verify RLS: anon selects on `vw_*` views, insert inquiries allowed, other writes blocked.
+- Confirm storage policies allow public read, admin-only uploads/deletes.
+
+**Phase 2 – Data Consistency Workflow**
+- Define content lifecycle: admin creates draft → publish sets `is_published` true → website queries show instantly.
+- Add optional webhook/notification for CDN cache purge (if used).
+- Document admin->website sync steps (autosave, publish, hero update) in ops guide.
+
+**Phase 3 – Testing & Rollout**
+- Prepare staging Supabase project or branch for joint QA (optional).
+- Run smoke tests: create/publish tour, verify website view, submit inquiry and check admin inbox.
+- Plan production launch checklist (DB backup, env vars set, CORS updated, tests pass).
+
+**Phase 4 – Post-launch Monitoring**
+- Set up Supabase logs dashboards (auth errors, RLS denials), monitor inquiries table growth.
+- Schedule regular backups/export of tours/inquiries.
+- Maintain knowledge base files (`memory-bank`) with reflections after major tasks (per workspace protocol).
+
+---
+
+Let me know which track to start executing first (e.g., create DB views, update website fetch functions, add slug validation). I’ll follow the plan incrementally and keep everything aligned with PRD and website expectations.
