@@ -65,66 +65,87 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   ];
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex min-h-screen bg-gradient-to-br from-background to-muted/20">
       {/* Sidebar */}
-      <aside className="w-64 border-r bg-card">
-        <div className="flex h-16 items-center border-b px-6">
-          <h1 className="text-xl font-bold">Admin Panel</h1>
+      <aside className="w-64 shadow-sidebar bg-sidebar-background border-r border-sidebar-border">
+        <div className="flex h-16 items-center border-b border-sidebar-border px-6 bg-gradient-primary">
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+              <Palmtree className="h-5 w-5 text-white" />
+            </div>
+            <h1 className="text-xl font-bold text-sidebar-primary-foreground">Admin Panel</h1>
+          </div>
         </div>
-        <nav className="space-y-1 p-4">
+        <nav className="space-y-2 p-4 scrollbar-thin overflow-y-auto max-h-[calc(100vh-4rem)]">
           {menuItems.map((item) => (
             <Link key={item.path} to={item.path}>
-              <Button
-                variant={location.pathname === item.path ? "secondary" : "ghost"}
-                className="w-full justify-start"
-              >
-                <item.icon className="mr-2 h-4 w-4" />
-                {item.label}
-              </Button>
+              <div className={`sidebar-item rounded-lg transition-all duration-200 ${
+                location.pathname === item.path ? 'active bg-sidebar-accent' : ''
+              }`}>
+                <Button
+                  variant={location.pathname === item.path ? "secondary" : "ghost"}
+                  className="w-full justify-start h-11 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-200"
+                >
+                  <item.icon className="mr-3 h-5 w-5" />
+                  <span className="font-medium">{item.label}</span>
+                </Button>
+              </div>
             </Link>
           ))}
-          
-          <Collapsible defaultOpen={isInquiriesOpen} className="space-y-1">
+
+          <Collapsible defaultOpen={isInquiriesOpen} className="space-y-2">
             <CollapsibleTrigger asChild>
-              <Button
-                variant={isInquiriesOpen ? "secondary" : "ghost"}
-                className="w-full justify-start"
-              >
-                <MessageSquare className="mr-2 h-4 w-4" />
-                Inquiries
-                <ChevronDown className="ml-auto h-4 w-4" />
-              </Button>
+              <div className={`sidebar-item rounded-lg transition-all duration-200 ${
+                isInquiriesOpen ? 'bg-sidebar-accent' : ''
+              }`}>
+                <Button
+                  variant={isInquiriesOpen ? "secondary" : "ghost"}
+                  className="w-full justify-start h-11 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-200"
+                >
+                  <MessageSquare className="mr-3 h-5 w-5" />
+                  <span className="font-medium">Inquiries</span>
+                  <ChevronDown className="ml-auto h-4 w-4 transition-transform duration-200" />
+                </Button>
+              </div>
             </CollapsibleTrigger>
             <CollapsibleContent className="space-y-1 pl-6">
               {inquiryItems.map((item) => (
                 <Link key={item.path} to={item.path}>
-                  <Button
-                    variant={location.pathname === item.path ? "secondary" : "ghost"}
-                    className="w-full justify-start text-sm"
-                  >
-                    <item.icon className="mr-2 h-3 w-3" />
-                    {item.label}
-                  </Button>
+                  <div className={`sidebar-item rounded-lg transition-all duration-200 ${
+                    location.pathname === item.path ? 'active bg-sidebar-accent/50' : ''
+                  }`}>
+                    <Button
+                      variant={location.pathname === item.path ? "secondary" : "ghost"}
+                      className="w-full justify-start text-sm h-9 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-200"
+                    >
+                      <item.icon className="mr-3 h-4 w-4" />
+                      {item.label}
+                    </Button>
+                  </div>
                 </Link>
               ))}
             </CollapsibleContent>
           </Collapsible>
-          
-          <Button
-            variant="ghost"
-            className="w-full justify-start text-destructive hover:text-destructive"
-            onClick={handleSignOut}
-          >
-            <LogOut className="mr-2 h-4 w-4" />
-            Logout
-          </Button>
+
+          <div className="pt-4 border-t border-sidebar-border">
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10 h-11 transition-all duration-200"
+              onClick={handleSignOut}
+            >
+              <LogOut className="mr-3 h-5 w-5" />
+              <span className="font-medium">Logout</span>
+            </Button>
+          </div>
         </nav>
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto">
-        <div className="container mx-auto p-6">
-          {children}
+      <main className="flex-1 overflow-y-auto scrollbar-thin">
+        <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10">
+          <div className="container mx-auto p-8 max-w-7xl">
+            {children}
+          </div>
         </div>
       </main>
     </div>
