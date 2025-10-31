@@ -1,61 +1,62 @@
-# Welcome to your Lovable project
+# Truth Teller Admin Panel
 
-## Project info
+## Project Description
 
-**URL**: https://lovable.dev/projects/77e68e31-0e60-415e-8a5c-377d5abcd45e
+This is a React-based admin panel for managing the Truth Teller website content, built with modern web technologies.
 
-## How can I edit this code?
+## Getting Started
 
-There are several ways of editing your application.
+### Prerequisites
 
-**Use Lovable**
+- Node.js (version 18 or higher)
+- npm or yarn package manager
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/77e68e31-0e60-415e-8a5c-377d5abcd45e) and start prompting.
+### Installation
 
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
+Follow these steps to set up the project locally:
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
+# Step 1: Clone the repository
 git clone <YOUR_GIT_URL>
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+# Step 2: Navigate to the project directory
+cd truth-teller-admin
 
-# Step 3: Install the necessary dependencies.
-npm i
+# Step 3: Install the necessary dependencies
+npm install
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Step 4: Start the development server
 npm run dev
 ```
 
-### Required environment variables for local development
+### Environment Variables
+
+For local development, you need to set the following environment variables:
 
 - `VITE_SUPABASE_URL` - Supabase project URL (e.g. `https://xyz.supabase.co`)
 - `VITE_SUPABASE_ANON_KEY` - Supabase anon/public API key
 
-These replace any hard-coded Supabase keys in the codebase; ensure they are set before running the dev server.
+Create a `.env.local` file in the root directory and add these variables.
 
-**Edit a file directly in GitHub**
+### Development Options
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+You can edit this project in several ways:
 
-**Use GitHub Codespaces**
+**Using your preferred IDE**
+- Clone the repository and work locally with your favorite code editor
+- Make changes and commit them to the repository
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+**Edit directly in GitHub**
+- Navigate to the desired file(s)
+- Click the "Edit" button (pencil icon) at the top right of the file view
+- Make your changes and commit them
+
+**Using GitHub Codespaces**
+- Navigate to the main page of your repository
+- Click on the "Code" button (green button) near the top right
+- Select the "Codespaces" tab
+- Click on "New codespace" to launch a new Codespace environment
+- Edit files directly within the Codespace and commit and push your changes
 
 ## What technologies are used for this project?
 
@@ -67,14 +68,27 @@ This project is built with:
 - shadcn-ui
 - Tailwind CSS
 
-## How can I deploy this project?
+## Deployment
 
-Simply open [Lovable](https://lovable.dev/projects/77e68e31-0e60-415e-8a5c-377d5abcd45e) and click on Share -> Publish.
+This project can be deployed to various hosting platforms. The build output is static and can be deployed to:
 
-## Can I connect a custom domain to my Lovable project?
+- Vercel
+- Netlify
+- GitHub Pages
+- Any static hosting service
 
-Yes, you can!
+### Build Commands
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+```sh
+# Build for production
+npm run build
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+# Preview production build
+npm run preview
+```
+
+### Deployment Steps
+
+1. Build the project: `npm run build`
+2. Deploy the `dist` folder to your hosting platform
+3. Configure environment variables on your hosting platform
