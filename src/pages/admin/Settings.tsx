@@ -11,7 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import type { HomepageSettings } from '@/types/database';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import ImageUpload from '@/components/admin/ImageUpload';
+import ImageGallery from '@/components/admin/ImageGallery';
 
 export default function Settings() {
   const [loading, setLoading] = useState(true);
@@ -20,7 +20,7 @@ export default function Settings() {
   const [formData, setFormData] = useState({
     hero_title: '',
     hero_subtitle: '',
-    hero_image_url: '',
+    hero_images: [] as Array<{ url: string; order: number }>,
   });
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -38,8 +38,9 @@ export default function Settings() {
   const loadSettings = async () => {
     setLoading(true);
     const { data, error } = await supabase
-      .from('homepage_settings')
+      .from('site_content')
       .select('*')
+      .eq('element_key', 'homepage_hero_banner')
       .single();
 
     if (error) {
@@ -50,10 +51,11 @@ export default function Settings() {
       });
     } else if (data) {
       setSettings(data);
+      const content = data.content_value || {};
       setFormData({
-        hero_title: data.hero_title || '',
-        hero_subtitle: data.hero_subtitle || '',
-        hero_image_url: data.hero_image_url || '',
+        hero_title: content.title || '',
+        hero_subtitle: content.subtitle || '',
+        hero_images: content.images || [],
       });
     }
     setLoading(false);
@@ -64,15 +66,19 @@ export default function Settings() {
     setSaving(true);
 
     try {
-      if (settings) {
-        const { error } = await supabase
-          .from('homepage_settings')
-          .update(formData)
-          .eq('id', settings.id);
+      const contentValue = {
+        title: formData.hero_title,
+        subtitle: formData.hero_subtitle,
+        images: formData.hero_images,
+      };
 
-        if (error) throw error;
-        toast({ title: 'Success', description: 'Settings updated' });
-      }
+      const { error } = await supabase
+        .from('site_content')
+        .update({ content_value: contentValue })
+        .eq('element_key', 'homepage_hero_banner');
+
+      if (error) throw error;
+      toast({ title: 'Success', description: 'Settings updated' });
     } catch (error: any) {
       toast({
         title: 'Error',
@@ -141,10 +147,9 @@ export default function Settings() {
                 />
               </div>
 
-              <ImageUpload
-                label="Hero Banner Image"
-                currentImage={formData.hero_image_url}
-                onImageChange={(url) => setFormData({ ...formData, hero_image_url: url })}
+              <ImageGallery
+                images={formData.hero_images}
+                onChange={(images) => setFormData({ ...formData, hero_images: images })}
                 bucket="homepage-images"
               />
 

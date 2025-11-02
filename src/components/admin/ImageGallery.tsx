@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Upload, X, GripVertical } from 'lucide-react';
+import { Upload, X, ArrowUp, ArrowDown, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface GalleryImage {
@@ -14,11 +14,12 @@ interface GalleryImage {
 interface ImageGalleryProps {
   images: GalleryImage[];
   onChange: (images: GalleryImage[]) => void;
+  bucket?: string;
   // Optional callback to obtain or create a tour id for server-first uploads
   onRequireTourId?: () => Promise<string | null>;
 }
 
-export default function ImageGallery({ images, onChange, onRequireTourId }: ImageGalleryProps) {
+export default function ImageGallery({ images, onChange, bucket = 'tour-images', onRequireTourId }: ImageGalleryProps) {
   const [uploading, setUploading] = useState(false);
   const { toast } = useToast();
 
@@ -61,13 +62,13 @@ export default function ImageGallery({ images, onChange, onRequireTourId }: Imag
       }
 
       const { error: uploadError } = await supabase.storage
-        .from('tour-images')
+        .from(bucket)
         .upload(filePath, file);
 
       if (uploadError) throw uploadError;
 
       const { data: { publicUrl } } = supabase.storage
-        .from('tour-images')
+        .from(bucket)
         .getPublicUrl(filePath);
 
       const newImage: GalleryImage = {
@@ -120,49 +121,53 @@ export default function ImageGallery({ images, onChange, onRequireTourId }: Imag
     <div className="space-y-4">
       <Label>Gallery Images</Label>
       
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
         {images.map((image, index) => (
-          <div key={index} className="relative group">
-            <img 
-              src={image.url} 
-              alt={`Gallery ${index + 1}`} 
-              className="w-full h-32 object-cover rounded-lg"
-            />
-            <div className="absolute top-2 right-2 flex gap-1">
+          <div key={index} className="space-y-2">
+            <div className="relative">
+              <img
+                src={image.url}
+                alt={`Gallery ${index + 1}`}
+                className="w-full h-32 object-cover rounded-lg"
+              />
+              <div className="absolute top-2 left-2 bg-black/70 text-white px-2 py-1 rounded text-xs font-medium">
+                #{image.order}
+              </div>
+            </div>
+
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => moveImage(index, 'up')}
+                disabled={index === 0}
+                className="flex-1"
+              >
+                <ArrowUp className="h-4 w-4 mr-1" />
+                Up
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => moveImage(index, 'down')}
+                disabled={index === images.length - 1}
+                className="flex-1"
+              >
+                <ArrowDown className="h-4 w-4 mr-1" />
+                Down
+              </Button>
               <Button
                 type="button"
                 variant="destructive"
-                size="icon"
-                className="h-6 w-6"
+                size="sm"
                 onClick={() => removeImage(index)}
+                className="flex-1"
               >
-                <X className="h-3 w-3" />
+                <Trash2 className="h-4 w-4 mr-1" />
+                Remove
               </Button>
-            </div>
-            <div className="absolute bottom-2 left-2 flex gap-1">
-              <Button
-                type="button"
-                variant="secondary"
-                size="icon"
-                className="h-6 w-6"
-                onClick={() => moveImage(index, 'up')}
-                disabled={index === 0}
-              >
-                <GripVertical className="h-3 w-3 rotate-180" />
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                size="icon"
-                className="h-6 w-6"
-                onClick={() => moveImage(index, 'down')}
-                disabled={index === images.length - 1}
-              >
-                <GripVertical className="h-3 w-3" />
-              </Button>
-            </div>
-            <div className="absolute top-2 left-2 bg-background/80 px-2 py-1 rounded text-xs">
-              #{image.order}
             </div>
           </div>
         ))}
