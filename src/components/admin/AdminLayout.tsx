@@ -60,6 +60,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   
   const inquiryItems = [
     { icon: FileText, label: 'Tour Inquiries', path: '/admin/inquiries/tours' },
+    { icon: MessageSquare, label: 'Quick Enquiries', path: '/admin/inquiries/quick' },
     { icon: Palmtree, label: 'Day Out Inquiries', path: '/admin/inquiries/day-out' },
     { icon: Mail, label: 'Contact Inquiries', path: '/admin/inquiries/contact' },
   ];

@@ -11,6 +11,7 @@ import Categories from "./pages/admin/Categories";
 import Tours from "./pages/admin/Tours";
 import TourForm from "./pages/admin/TourForm";
 import TourInquiries from "./pages/admin/TourInquiries";
+import QuickEnquiries from "./pages/admin/QuickEnquiries";
 import DayOutInquiries from "./pages/admin/DayOutInquiries";
 import ContactInquiries from "./pages/admin/ContactInquiries";
 import DayOutPackages from "./pages/admin/DayOutPackages";
@@ -35,6 +36,7 @@ const App = () => (
           <Route path="/admin/tours/edit/:id" element={<TourForm />} />
           <Route path="/admin/day-out-packages" element={<DayOutPackages />} />
           <Route path="/admin/inquiries/tours" element={<TourInquiries />} />
+          <Route path="/admin/inquiries/quick" element={<QuickEnquiries />} />
           <Route path="/admin/inquiries/day-out" element={<DayOutInquiries />} />
           <Route path="/admin/inquiries/contact" element={<ContactInquiries />} />
           <Route path="/admin/settings" element={<Settings />} />
