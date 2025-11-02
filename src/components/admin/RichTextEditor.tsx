@@ -18,9 +18,10 @@ interface RichTextEditorProps {
 export default function RichTextEditor({ content, onChange }: RichTextEditorProps) {
   const editor = useEditor({
     extensions: [
-      StarterKit,
-      Link.configure({
-        openOnClick: false,
+      StarterKit.configure({
+        link: {
+          openOnClick: false,
+        },
       }),
       Image,
       TextStyle,

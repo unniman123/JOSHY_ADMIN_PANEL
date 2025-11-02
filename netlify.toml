@@ -2,6 +2,9 @@
   command = "npm run build"
   publish = "dist"
 
+# Alternative build command if needed (uncomment if NPM_FLAGS doesn't work)
+# command = "npm run build:legacy"
+
 [build.environment]
   NPM_FLAGS = "--legacy-peer-deps"
 
