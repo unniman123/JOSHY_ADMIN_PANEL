@@ -4,9 +4,11 @@ import Link from '@tiptap/extension-link';
 import Image from '@tiptap/extension-image';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { FontFamily } from '@tiptap/extension-font-family';
+import { Color } from '@tiptap/extension-color';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Bold, Italic, Link as LinkIcon, Image as ImageIcon, List, ListOrdered, Type } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Bold, Italic, Link as LinkIcon, Image as ImageIcon, List, ListOrdered, Type, Palette } from 'lucide-react';
 
 interface RichTextEditorProps {
   content: string;
@@ -23,6 +25,7 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
       Image,
       TextStyle,
       FontFamily,
+      Color,
     ],
     content: content || '<p></p>',
     onUpdate: ({ editor }) => {
@@ -64,6 +67,30 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
   ];
 
   const currentFontFamily = editor.getAttributes('textStyle').fontFamily || '';
+  const currentColor = editor.getAttributes('textStyle').color || '';
+
+  const colorOptions = [
+    { name: 'Default', value: '', color: 'transparent' },
+    { name: 'Black', value: '#000000', color: '#000000' },
+    { name: 'White', value: '#ffffff', color: '#ffffff' },
+    { name: 'Red', value: '#ef4444', color: '#ef4444' },
+    { name: 'Blue', value: '#3b82f6', color: '#3b82f6' },
+    { name: 'Green', value: '#22c55e', color: '#22c55e' },
+    { name: 'Yellow', value: '#eab308', color: '#eab308' },
+    { name: 'Purple', value: '#a855f7', color: '#a855f7' },
+    { name: 'Orange', value: '#f97316', color: '#f97316' },
+    { name: 'Gray', value: '#6b7280', color: '#6b7280' },
+    { name: 'Pink', value: '#ec4899', color: '#ec4899' },
+    { name: 'Teal', value: '#14b8a6', color: '#14b8a6' },
+  ];
+
+  const handleColorChange = (color: string) => {
+    if (color === '') {
+      editor.chain().focus().unsetColor().run();
+    } else {
+      editor.chain().focus().setColor(color).run();
+    }
+  };
 
   return (
     <div className="border rounded-lg">
@@ -94,6 +121,58 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
             ))}
           </SelectContent>
         </Select>
+
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="relative"
+            >
+              <Palette className="h-4 w-4" />
+              {currentColor && (
+                <div
+                  className="absolute bottom-1 right-1 w-3 h-3 rounded border border-white"
+                  style={{ backgroundColor: currentColor }}
+                />
+              )}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-64 p-3">
+            <div className="space-y-3">
+              <div className="text-sm font-medium">Text Color</div>
+              <div className="grid grid-cols-6 gap-2">
+                {colorOptions.map((colorOption) => (
+                  <button
+                    key={colorOption.value}
+                    type="button"
+                    className={`w-8 h-8 rounded border-2 hover:scale-110 transition-transform ${
+                      currentColor === colorOption.value
+                        ? 'border-primary ring-2 ring-primary/20'
+                        : 'border-muted'
+                    }`}
+                    style={{
+                      backgroundColor: colorOption.color,
+                      borderColor: currentColor === colorOption.value ? 'currentColor' : undefined
+                    }}
+                    onClick={() => handleColorChange(colorOption.value)}
+                    title={colorOption.name}
+                  />
+                ))}
+              </div>
+              <div className="pt-2 border-t">
+                <label className="text-sm font-medium">Custom Color</label>
+                <input
+                  type="color"
+                  className="w-full h-8 mt-1 rounded border cursor-pointer"
+                  value={currentColor.startsWith('#') ? currentColor : '#000000'}
+                  onChange={(e) => handleColorChange(e.target.value)}
+                />
+              </div>
+            </div>
+          </PopoverContent>
+        </Popover>
 
         <Button
           type="button"
