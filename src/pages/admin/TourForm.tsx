@@ -16,6 +16,7 @@ import ImageUpload from '@/components/admin/ImageUpload';
 import ImageGallery from '@/components/admin/ImageGallery';
 import ItineraryBuilder from '@/components/admin/ItineraryBuilder';
 import { Skeleton } from '@/components/ui/skeleton';
+import type { TablesInsert } from '@/integrations/supabase/types';
 
 export default function TourForm() {
   const { id } = useParams();
@@ -38,6 +39,8 @@ export default function TourForm() {
     is_featured: false,
     is_day_out_package: false,
     is_published: true,
+    rating: '',
+    location: '',
   });
   const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null);
   const [slugMessage, setSlugMessage] = useState('');
@@ -140,7 +143,7 @@ export default function TourForm() {
         return;
       }
 
-      const tourData = {
+      const tourData: TablesInsert<'tours'> = {
         title: formData.title,
         slug: formData.slug,
         category_id: formData.category_id || null,
@@ -151,9 +154,9 @@ export default function TourForm() {
         is_featured: formData.is_featured,
         is_day_out_package: formData.is_day_out_package,
         is_published: true,
-        status: 'published',
-        rating: (formData as any).rating ? parseFloat((formData as any).rating) : null,
-        location: (formData as any).location || null,
+        status: 'published' as const,
+        rating: formData.rating ? parseFloat(formData.rating) : null,
+        location: formData.location || null,
       };
 
       const result = await supabase
@@ -185,10 +188,11 @@ export default function TourForm() {
   const loadCategories = async () => {
     const { data, error } = await supabase
       .from('categories')
-      .select('id, name, slug, parent_id, parent_category, display_order')
+      .select('id, name, slug, parent_category, display_order')
       .eq('is_active', true)
+      .order('parent_category')
       .order('display_order');
-    
+
     if (!error && data) {
       setCategories(data);
     }
@@ -226,6 +230,8 @@ export default function TourForm() {
       is_featured: data.is_featured || false,
       is_day_out_package: data.is_day_out_package || false,
       is_published: data.is_published || false,
+      rating: data.rating?.toString() || '',
+      location: data.location || '',
     });
     setLoading(false);
   };
@@ -339,7 +345,7 @@ export default function TourForm() {
         return;
       }
 
-      const tourData = {
+      const tourData: TablesInsert<'tours'> = {
         title: formData.title,
         slug: trimmedSlug,
         category_id: formData.category_id || null,
@@ -378,8 +384,11 @@ export default function TourForm() {
 
       // Persist gallery images into tour_images table (server-first canonical storage)
       try {
-        // remove existing images for this tour and re-insert
-        await supabase.from('tour_images').delete().eq('tour_id', tourId);
+        // Remove only gallery and itinerary images (preserve overview/main images)
+        await supabase.from('tour_images')
+          .delete()
+          .eq('tour_id', tourId)
+          .in('section', ['gallery', 'itinerary']);
 
         const imagesToInsert = (formData.image_gallery_urls || []).map((img: any, idx: number) => ({
           tour_id: tourId,
@@ -394,6 +403,33 @@ export default function TourForm() {
         if (imagesToInsert.length > 0) {
           const insertRes = await supabase.from('tour_images').insert(imagesToInsert);
           if (insertRes.error) throw insertRes.error;
+        }
+
+        // Ensure overview image exists and matches featured_image_url
+        if (formData.featured_image_url) {
+          const { data: existingOverview } = await supabase
+            .from('tour_images')
+            .select('id, image_url')
+            .eq('tour_id', tourId)
+            .eq('section', 'overview')
+            .single();
+
+          if (!existingOverview) {
+            // Insert overview image if it doesn't exist
+            await supabase.from('tour_images').insert({
+              tour_id: tourId,
+              image_url: formData.featured_image_url,
+              section: 'overview',
+              display_order: 0,
+              is_active: true
+            });
+          } else if (existingOverview.image_url !== formData.featured_image_url) {
+            // Update overview image if URL changed
+            await supabase
+              .from('tour_images')
+              .update({ image_url: formData.featured_image_url })
+              .eq('id', existingOverview.id);
+          }
         }
       } catch (imgErr) {
         // non-fatal: report but continue
@@ -466,7 +502,7 @@ export default function TourForm() {
           <h1 className="text-3xl font-bold">{id ? 'Edit' : 'Create'} Tour</h1>
         </div>
 
-        <form onSubmit={(e) => handleSubmit(e, false)} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle>Basic Information</CardTitle>
@@ -511,8 +547,8 @@ export default function TourForm() {
                     <SelectValue placeholder="Select a category" />
                   </SelectTrigger>
                   <SelectContent>
-                    {['Kerala Travel', 'Discover India', 'Global Holiday'].map((parentCat) => {
-                      const subcategories = categories.filter(cat => cat.parent_category === parentCat);
+                    {Array.from(new Set(categories.map(cat => cat.parent_category).filter(Boolean))).map((parentCat) => {
+                      const subcategories = categories.filter(cat => cat.parent_category === parentCat && cat.name !== parentCat);
                       if (subcategories.length === 0) return null;
                       return (
                         <div key={parentCat}>
@@ -573,6 +609,7 @@ export default function TourForm() {
                 onImageChange={(url) => setFormData({ ...formData, featured_image_url: url })}
                 tourId={id}
                 onRequireTourId={ensureDraftTour}
+                imageType="main"
               />
               
               <ImageGallery
@@ -596,68 +633,163 @@ export default function TourForm() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Display Settings</CardTitle>
+          <Card className="border-l-4 border-l-blue-500">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                Display Settings
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Configure how this tour appears across different sections of your website
+              </p>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="display_order">Display Order</Label>
-                <Input
-                  id="display_order"
-                  type="number"
-                  value={formData.display_order}
-                  onChange={(e) => setFormData({ ...formData, display_order: e.target.value })}
-                  min="0"
-                />
-                <p className="text-sm text-muted-foreground">
-                  Lower numbers appear first
-                </p>
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="is_featured"
-                  checked={formData.is_featured}
-                  onCheckedChange={(checked) => setFormData({ ...formData, is_featured: checked as boolean })}
-                />
-                <Label htmlFor="is_featured" className="cursor-pointer">
-                  Featured (shows on homepage)
-                </Label>
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="is_day_out_package"
-                  checked={formData.is_day_out_package}
-                  onCheckedChange={(checked) => setFormData({ ...formData, is_day_out_package: checked as boolean })}
-                />
-                <Label htmlFor="is_day_out_package" className="cursor-pointer">
-                  Day Out Package
-                </Label>
-              </div>
-              <div className="grid grid-cols-2 gap-4 mt-2">
-                <div>
-                  <Label htmlFor="rating">Rating (0.0 - 5.0)</Label>
-                  <Input
-                    id="rating"
-                    type="number"
-                    min="0"
-                    max="5"
-                    step="0.1"
-                    value={(formData as any).rating ?? ''}
-                    onChange={(e) => setFormData({ ...formData, rating: e.target.value })}
-                    className="w-32"
-                  />
+            <CardContent className="space-y-6">
+              {/* Display Order Section */}
+              <div className="bg-gray-50 rounded-lg p-4 border">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
+                  <Label htmlFor="display_order" className="text-sm font-medium text-gray-700">
+                    Display Priority
+                  </Label>
                 </div>
-                <div>
-                  <Label htmlFor="location">Location</Label>
+                <div className="space-y-2">
                   <Input
-                    id="location"
-                    value={(formData as any).location ?? ''}
-                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                    placeholder="City, Region"
+                    id="display_order"
+                    type="number"
+                    value={formData.display_order}
+                    onChange={(e) => setFormData({ ...formData, display_order: e.target.value })}
+                    min="0"
+                    className="w-24"
+                    placeholder="999"
                   />
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    <span className="inline-block w-1 h-1 bg-gray-400 rounded-full"></span>
+                    Lower numbers appear first in listings
+                  </p>
+                </div>
+              </div>
+
+              {/* Featured Sections */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                  <Label className="text-sm font-medium text-gray-700">
+                    Featured Sections
+                  </Label>
+                </div>
+
+                <div className="grid gap-3">
+                  {/* Featured Tour Checkbox */}
+                  <div className="flex items-center justify-between p-3 bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-lg hover:shadow-sm transition-shadow">
+                    <div className="flex items-center space-x-3">
+                      <Checkbox
+                        id="is_featured"
+                        checked={formData.is_featured}
+                        onCheckedChange={(checked) => setFormData({ ...formData, is_featured: checked as boolean })}
+                        className="data-[state=checked]:bg-yellow-500 data-[state=checked]:border-yellow-500"
+                      />
+                      <div className="flex-1">
+                        <Label htmlFor="is_featured" className="cursor-pointer font-medium text-gray-800">
+                          Featured Tour
+                        </Label>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Display prominently on the homepage hero section
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-yellow-500">
+                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                      </svg>
+                    </div>
+                  </div>
+
+                  {/* Day Out Package Checkbox */}
+                  <div className="flex items-center justify-between p-3 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg hover:shadow-sm transition-shadow">
+                    <div className="flex items-center space-x-3">
+                      <Checkbox
+                        id="is_day_out_package"
+                        checked={formData.is_day_out_package}
+                        onCheckedChange={(checked) => setFormData({ ...formData, is_day_out_package: checked as boolean })}
+                        className="data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500"
+                      />
+                      <div className="flex-1">
+                        <Label htmlFor="is_day_out_package" className="cursor-pointer font-medium text-gray-800">
+                          Day Out Package
+                        </Label>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Include in the dedicated day out packages section
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-blue-500">
+                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Additional Details */}
+              <div className="border-t pt-4">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-1.5 h-1.5 bg-purple-500 rounded-full"></div>
+                  <Label className="text-sm font-medium text-gray-700">
+                    Additional Details
+                  </Label>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="rating" className="text-sm font-medium text-gray-700">
+                      Tour Rating
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        id="rating"
+                        type="number"
+                        min="0"
+                        max="5"
+                        step="0.1"
+                        value={(formData as any).rating ?? ''}
+                        onChange={(e) => setFormData({ ...formData, rating: e.target.value })}
+                        className="pr-12"
+                        placeholder="0.0"
+                      />
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                        <span className="text-xs text-muted-foreground">/5.0</span>
+                        <svg className="w-3 h-3 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                        </svg>
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Rate from 0.0 to 5.0 stars
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="location" className="text-sm font-medium text-gray-700">
+                      Location
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        id="location"
+                        value={(formData as any).location ?? ''}
+                        onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                        placeholder="e.g., Paris, France"
+                        className="pl-9"
+                      />
+                      <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Primary destination or region
+                    </p>
+                  </div>
                 </div>
               </div>
             </CardContent>

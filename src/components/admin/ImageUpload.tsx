@@ -15,15 +15,18 @@ interface ImageUploadProps {
   // ImageUpload will call onRequireTourId to obtain one before uploading.
   tourId?: string | null;
   onRequireTourId?: () => Promise<string>;
+  // Optional image type to determine section in tour_images table
+  imageType?: 'main' | 'gallery' | 'itinerary';
 }
 
-export default function ImageUpload({ 
-  label, 
-  currentImage, 
-  onImageChange, 
+export default function ImageUpload({
+  label,
+  currentImage,
+  onImageChange,
   bucket = 'tour-images',
   tourId,
-  onRequireTourId
+  onRequireTourId,
+  imageType = 'gallery'
 }: ImageUploadProps) {
   const [uploading, setUploading] = useState(false);
   const { toast } = useToast();
@@ -77,8 +80,46 @@ export default function ImageUpload({
         .from(bucket)
         .getPublicUrl(filePath);
 
+      // For main images, also save to tour_images table with section = 'overview'
+      if (imageType === 'main' && targetTourId) {
+        try {
+          // First check if there's already an overview image for this tour
+          const { data: existingOverview } = await supabase
+            .from('tour_images')
+            .select('id')
+            .eq('tour_id', targetTourId)
+            .eq('section', 'overview')
+            .single();
+
+          if (existingOverview) {
+            // Update existing overview image
+            await supabase
+              .from('tour_images')
+              .update({
+                image_url: publicUrl,
+                is_active: true
+              })
+              .eq('id', existingOverview.id);
+          } else {
+            // Insert new overview image
+            await supabase
+              .from('tour_images')
+              .insert({
+                tour_id: targetTourId,
+                image_url: publicUrl,
+                section: 'overview',
+                display_order: 0,
+                is_active: true
+              });
+          }
+        } catch (dbError) {
+          console.warn('Failed to save main image to tour_images table:', dbError);
+          // Continue with upload success - don't fail the whole operation
+        }
+      }
+
       onImageChange(publicUrl);
-      
+
       toast({
         title: 'Success',
         description: 'Image uploaded successfully',

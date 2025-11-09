@@ -145,6 +145,20 @@ export type Database = {
             referencedRelation: "tours"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "day_out_inquiry_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "vw_published_tours"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "day_out_inquiry_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "vw_tour_by_slug"
+            referencedColumns: ["id"]
+          },
         ]
       }
       homepage_settings: {
@@ -246,7 +260,57 @@ export type Database = {
             referencedRelation: "tours"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "inquiries_tour_id_fkey"
+            columns: ["tour_id"]
+            isOneToOne: false
+            referencedRelation: "vw_published_tours"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inquiries_tour_id_fkey"
+            columns: ["tour_id"]
+            isOneToOne: false
+            referencedRelation: "vw_tour_by_slug"
+            referencedColumns: ["id"]
+          },
         ]
+      }
+      quick_enquiries: {
+        Row: {
+          destination: string | null
+          id: string
+          mobile_no: string
+          name: string
+          number_of_people: number | null
+          preferred_date: string | null
+          special_comments: string | null
+          status: string
+          submitted_at: string
+        }
+        Insert: {
+          destination?: string | null
+          id?: string
+          mobile_no: string
+          name: string
+          number_of_people?: number | null
+          preferred_date?: string | null
+          special_comments?: string | null
+          status?: string
+          submitted_at?: string
+        }
+        Update: {
+          destination?: string | null
+          id?: string
+          mobile_no?: string
+          name?: string
+          number_of_people?: number | null
+          preferred_date?: string | null
+          special_comments?: string | null
+          status?: string
+          submitted_at?: string
+        }
+        Relationships: []
       }
       site_content: {
         Row: {
@@ -271,27 +335,36 @@ export type Database = {
       }
       tour_images: {
         Row: {
+          alt_text: string | null
           caption: string | null
           created_at: string
           display_order: number | null
           id: string
           image_url: string
+          is_active: boolean | null
+          section: string | null
           tour_id: string
         }
         Insert: {
+          alt_text?: string | null
           caption?: string | null
           created_at?: string
           display_order?: number | null
           id?: string
           image_url: string
+          is_active?: boolean | null
+          section?: string | null
           tour_id: string
         }
         Update: {
+          alt_text?: string | null
           caption?: string | null
           created_at?: string
           display_order?: number | null
           id?: string
           image_url?: string
+          is_active?: boolean | null
+          section?: string | null
           tour_id?: string
         }
         Relationships: [
@@ -300,6 +373,81 @@ export type Database = {
             columns: ["tour_id"]
             isOneToOne: false
             referencedRelation: "tours"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tour_images_tour_id_fkey"
+            columns: ["tour_id"]
+            isOneToOne: false
+            referencedRelation: "vw_published_tours"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tour_images_tour_id_fkey"
+            columns: ["tour_id"]
+            isOneToOne: false
+            referencedRelation: "vw_tour_by_slug"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tour_sections: {
+        Row: {
+          content: Json | null
+          created_at: string
+          created_by: string | null
+          id: string
+          is_visible: boolean | null
+          order: number | null
+          title: string | null
+          tour_id: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          content?: Json | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_visible?: boolean | null
+          order?: number | null
+          title?: string | null
+          tour_id: string
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          content?: Json | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_visible?: boolean | null
+          order?: number | null
+          title?: string | null
+          tour_id?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tour_sections_tour_id_fkey"
+            columns: ["tour_id"]
+            isOneToOne: false
+            referencedRelation: "tours"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tour_sections_tour_id_fkey"
+            columns: ["tour_id"]
+            isOneToOne: false
+            referencedRelation: "vw_published_tours"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tour_sections_tour_id_fkey"
+            columns: ["tour_id"]
+            isOneToOne: false
+            referencedRelation: "vw_tour_by_slug"
             referencedColumns: ["id"]
           },
         ]
@@ -320,11 +468,14 @@ export type Database = {
           is_featured: boolean | null
           is_published: boolean | null
           itinerary: Json | null
+          location: string | null
           max_group_size: number | null
           meta_description: string | null
           meta_title: string | null
           overview: Json | null
           price: number | null
+          rating: number | null
+          review_count: number | null
           short_description: string | null
           slug: string
           status: Database["public"]["Enums"]["tour_status"] | null
@@ -346,11 +497,14 @@ export type Database = {
           is_featured?: boolean | null
           is_published?: boolean | null
           itinerary?: Json | null
+          location?: string | null
           max_group_size?: number | null
           meta_description?: string | null
           meta_title?: string | null
           overview?: Json | null
           price?: number | null
+          rating?: number | null
+          review_count?: number | null
           short_description?: string | null
           slug: string
           status?: Database["public"]["Enums"]["tour_status"] | null
@@ -372,11 +526,14 @@ export type Database = {
           is_featured?: boolean | null
           is_published?: boolean | null
           itinerary?: Json | null
+          location?: string | null
           max_group_size?: number | null
           meta_description?: string | null
           meta_title?: string | null
           overview?: Json | null
           price?: number | null
+          rating?: number | null
+          review_count?: number | null
           short_description?: string | null
           slug?: string
           status?: Database["public"]["Enums"]["tour_status"] | null
@@ -416,9 +573,79 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      vw_published_tours: {
+        Row: {
+          category_id: string | null
+          category_name: string | null
+          category_slug: string | null
+          display_order: number | null
+          duration_days: number | null
+          featured_image_url: string | null
+          id: string | null
+          images: Json | null
+          is_day_out_package: boolean | null
+          is_featured: boolean | null
+          location: string | null
+          parent_category_name: string | null
+          parent_category_slug: string | null
+          price: number | null
+          rating: number | null
+          review_count: number | null
+          short_description: string | null
+          slug: string | null
+          title: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tours_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vw_tour_by_slug: {
+        Row: {
+          category_id: string | null
+          category_name: string | null
+          category_slug: string | null
+          description: string | null
+          display_order: number | null
+          duration_days: number | null
+          featured_image_url: string | null
+          id: string | null
+          images: Json | null
+          is_day_out_package: boolean | null
+          is_featured: boolean | null
+          is_published: boolean | null
+          itinerary: Json | null
+          location: string | null
+          overview_content: Json | null
+          price: number | null
+          rating: number | null
+          review_count: number | null
+          sections: Json | null
+          short_description: string | null
+          slug: string | null
+          title: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tours_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
+      check_tour_slug_available: {
+        Args: { p_slug: string; p_tour_id?: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -436,6 +663,7 @@ export type Database = {
         | "Kerala Travel"
         | "Discover India"
         | "Global Holiday"
+        | "Kerala Travels"
       tour_status: "draft" | "published" | "archived"
     }
     CompositeTypes: {
@@ -572,6 +800,7 @@ export const Constants = {
         "Kerala Travel",
         "Discover India",
         "Global Holiday",
+        "Kerala Travels",
       ],
       tour_status: ["draft", "published", "archived"],
     },

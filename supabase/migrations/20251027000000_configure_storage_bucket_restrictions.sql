@@ -30,3 +30,10 @@ COMMENT ON TABLE storage.buckets IS 'Storage buckets configured with 10MB file s
 -- SELECT id, name, file_size_limit, allowed_mime_types FROM storage.buckets WHERE id IN ('tour-images', 'category-images', 'homepage-images');
 
 
+
+
+
+
+
+
+

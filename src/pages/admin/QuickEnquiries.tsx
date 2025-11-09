@@ -240,3 +240,6 @@ export default function QuickEnquiries() {
     </AdminLayout>
   );
 }
+
+
+

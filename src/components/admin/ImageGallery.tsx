@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 interface GalleryImage {
   url: string;
   order: number;
+  section?: string;
 }
 
 interface ImageGalleryProps {
@@ -74,6 +75,7 @@ export default function ImageGallery({ images, onChange, bucket = 'tour-images',
       const newImage: GalleryImage = {
         url: publicUrl,
         order: images.length + 1,
+        section: 'gallery',
       };
 
       onChange([...images, newImage]);
