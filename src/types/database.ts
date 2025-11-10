@@ -9,12 +9,15 @@ export interface UserRole {
   created_at: string;
 }
 
+export type ParentCategoryType = 'Kerala Travel' | 'Discover India' | 'Global Holiday' | 'Kerala Travels';
+
 export interface Category {
   id: string;
   name: string;
   slug: string;
   description?: string;
   parent_id?: string;
+  parent_category?: ParentCategoryType | null;
   image_url?: string;
   display_order: number;
   is_active: boolean;
