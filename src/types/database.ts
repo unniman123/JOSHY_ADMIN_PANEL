@@ -2,6 +2,21 @@ export type AppRole = 'admin' | 'moderator' | 'user';
 export type TourStatus = 'draft' | 'published' | 'archived';
 export type InquiryStatus = 'new' | 'in_progress' | 'resolved' | 'closed';
 
+export interface CropData {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  aspectRatio: number;
+}
+
+export interface GalleryImage {
+  url: string;
+  order: number;
+  section?: string;
+  cropData?: CropData;
+}
+
 export interface UserRole {
   id: string;
   user_id: string;

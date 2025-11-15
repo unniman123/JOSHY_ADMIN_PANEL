@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import type { HomepageSettings } from '@/types/database';
+import type { HomepageSettings, GalleryImage } from '@/types/database';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import ImageGallery from '@/components/admin/ImageGallery';
@@ -17,10 +17,11 @@ export default function Settings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [settings, setSettings] = useState<any>(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [formData, setFormData] = useState({
     hero_title: '',
     hero_subtitle: '',
-    hero_images: [] as Array<{ url: string; order: number }>,
+    hero_images: [] as GalleryImage[],
   });
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -72,14 +73,30 @@ export default function Settings() {
         images: formData.hero_images,
       };
 
-      const { error } = await supabase
+      // Debug logging
+      console.log('🔍 Attempting to save hero banner settings...');
+      console.log('📦 Content to save:', JSON.stringify(contentValue, null, 2));
+      console.log('🖼️ Number of images:', formData.hero_images.length);
+      console.log('✂️ Images with cropData:', formData.hero_images.filter(img => img.cropData).length);
+
+      const { data, error } = await supabase
         .from('site_content')
         .update({ content_value: contentValue })
-        .eq('element_key', 'homepage_hero_banner');
+        .eq('element_key', 'homepage_hero_banner')
+        .select();
+
+      console.log('📡 Supabase response:', { data, error });
 
       if (error) throw error;
-      toast({ title: 'Success', description: 'Settings updated' });
+      
+      console.log('✅ Save successful!');
+      setHasUnsavedChanges(false);
+      toast({ title: 'Success', description: 'Settings updated successfully' });
+      
+      // Reload settings to confirm save
+      await loadSettings();
     } catch (error: any) {
+      console.error('❌ Save failed:', error);
       toast({
         title: 'Error',
         description: error.message || 'Failed to save settings',
@@ -149,9 +166,19 @@ export default function Settings() {
 
               <ImageGallery
                 images={formData.hero_images}
-                onChange={(images) => setFormData({ ...formData, hero_images: images })}
+                onChange={(images) => {
+                  console.log('🔄 Images changed in gallery');
+                  setFormData({ ...formData, hero_images: images });
+                  setHasUnsavedChanges(true);
+                }}
                 bucket="homepage-images"
               />
+
+              {hasUnsavedChanges && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-center gap-2">
+                  <span className="text-yellow-800 font-medium">⚠️ You have unsaved changes</span>
+                </div>
+              )}
 
               <Button type="submit" disabled={saving}>
                 {saving ? 'Saving...' : 'Save Changes'}
